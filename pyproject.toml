@@ -14,7 +14,8 @@ dependencies = [
 [project.optional-dependencies]
 a2a = ["a2a-sdk>=0.2.0"]
 mcp = ["fastmcp>=2.0.0"]
-all = ["a2a-sdk>=0.2.0", "fastmcp>=2.0.0"]
+studio = ["aiosqlite>=0.20.0", "openai>=1.0.0"]
+all = ["a2a-sdk>=0.2.0", "fastmcp>=2.0.0", "aiosqlite>=0.20.0", "openai>=1.0.0"]
 examples = [
     "langgraph>=0.2.0",
     "langchain-openai>=0.2.0",

@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="{
+        stats: { traces: 0, agents: 0, prompts: 0, evals: 0 },
+        recentTraces: [],
+        agents: [],
+        async init() {
+            const [tResp, aResp, pResp, eResp] = await Promise.all([
+                fetch('/api/traces?limit=5'),
+                fetch('/api/discovery/agents'),
+                fetch('/api/prompts'),
+                fetch('/api/eval/results?limit=5')
+            ]);
+            const tData = await tResp.json();
+            const aData = await aResp.json();
+            const pData = await pResp.json();
+            const eData = await eResp.json();
+            this.recentTraces = tData.traces || [];
+            this.agents = aData.agents || [];
+            this.stats.traces = this.recentTraces.length;
+            this.stats.agents = this.agents.length;
+            this.stats.prompts = (pData.prompts || []).length;
+            this.stats.evals = (eData.evaluations || []).length;
+        }
+    }">
+        <div class="page-header">
+            <h2>Dashboard</h2>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="label">Traces</div>
+                <div class="value" x-text="stats.traces">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Agents</div>
+                <div class="value" x-text="stats.agents">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Prompts</div>
+                <div class="value" x-text="stats.prompts">0</div>
+            </div>
+            <div class="stat-card">
+                <div class="label">Evaluations</div>
+                <div class="value" x-text="stats.evals">0</div>
+            </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Recent Traces</h3>
+                    <a href="/traces" class="btn btn-sm">View All</a>
+                </div>
+                <template x-if="recentTraces.length === 0">
+                    <div class="empty-state" style="padding: 30px;">
+                        <p>No traces yet. Connect an agent with StudioTracingMiddleware.</p>
+                    </div>
+                </template>
+                <div class="table-wrap" x-show="recentTraces.length > 0">
+                    <table>
+                        <thead><tr><th>Agent</th><th>Status</th><th>Duration</th></tr></thead>
+                        <tbody>
+                            <template x-for="t in recentTraces" :key="t.trace_id">
+                                <tr @click="window.location.href='/traces/' + t.trace_id">
+                                    <td x-text="t.agent_id || 'unknown'"></td>
+                                    <td><span class="badge" :class="'badge-' + t.status" x-text="t.status"></span></td>
+                                    <td x-text="t.duration_ms ? Math.round(t.duration_ms) + 'ms' : '-'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h3>Agents</h3>
+                    <a href="/discovery" class="btn btn-sm">View All</a>
+                </div>
+                <template x-if="agents.length === 0">
+                    <div class="empty-state" style="padding: 30px;">
+                        <p>No agents registered. Use StudioClient to register agents.</p>
+                    </div>
+                </template>
+                <div class="table-wrap" x-show="agents.length > 0">
+                    <table>
+                        <thead><tr><th>Name</th><th>Protocol</th><th>Status</th></tr></thead>
+                        <tbody>
+                            <template x-for="a in agents" :key="a.agent_id">
+                                <tr @click="window.location.href='/discovery'">
+                                    <td>
+                                        <span class="health-dot" :class="a.status"></span>
+                                        <span x-text="a.name"></span>
+                                    </td>
+                                    <td x-text="a.protocol"></td>
+                                    <td><span class="badge" :class="'badge-' + a.status" x-text="a.status"></span></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

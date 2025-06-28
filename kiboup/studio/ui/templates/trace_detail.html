@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trace Detail - KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces" style="font-weight:600; color:var(--accent);">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="traceDetailPage" data-trace-id="{{trace_id}}">
+        <div class="page-header">
+            <h2>
+                <a href="/traces" style="color: var(--text-muted);">&larr; Traces</a>
+                &nbsp;/&nbsp;
+                <span x-text="trace ? trace.trace_id.substring(0, 12) + '...' : ''"></span>
+            </h2>
+        </div>
+
+        <template x-if="loading">
+            <div class="empty-state"><p class="loading">Loading trace...</p></div>
+        </template>
+
+        <template x-if="!loading && trace">
+            <div>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="label">Agent</div>
+                        <div class="value" style="font-size: 18px;" x-text="trace.agent_id || '-'"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Status</div>
+                        <div class="value" style="font-size: 18px;"><span class="badge" :class="'badge-' + trace.status" x-text="trace.status"></span></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Duration</div>
+                        <div class="value" style="font-size: 18px;" x-text="formatDuration(trace.duration_ms)"></div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="label">Spans</div>
+                        <div class="value" x-text="spans.length"></div>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                    <div class="card">
+                        <div class="card-header"><h3>Span Waterfall</h3></div>
+                        <div class="span-tree">
+                            <template x-for="span in spans" :key="span.span_id">
+                                <div class="span-item" @click="selectSpan(span)"
+                                     :style="{ paddingLeft: (12 + getIndent(span) * 20) + 'px' }"
+                                     :class="{ 'bg-hover': selectedSpan?.span_id === span.span_id }">
+                                    <span class="span-kind" :class="'span-kind-' + span.kind" x-text="span.kind"></span>
+                                    <span class="span-name" x-text="span.name"></span>
+                                    <span class="span-duration" x-text="formatDuration(span.duration_ms)"></span>
+                                    <span class="badge" :class="'badge-' + span.status" x-text="span.status" style="font-size: 9px;"></span>
+                                </div>
+                            </template>
+                        </div>
+                        <template x-if="spans.length === 0">
+                            <div class="empty-state" style="padding: 20px;"><p>No spans in this trace.</p></div>
+                        </template>
+                    </div>
+
+                    <div class="card">
+                        <div class="card-header"><h3>Span Detail</h3></div>
+                        <template x-if="!selectedSpan">
+                            <div class="empty-state" style="padding: 30px;"><p>Click a span to view details.</p></div>
+                        </template>
+                        <template x-if="selectedSpan">
+                            <div>
+                                <div class="form-group">
+                                    <label>Span ID</label>
+                                    <div style="font-family: var(--font-mono); font-size: 12px;" x-text="selectedSpan.span_id"></div>
+                                </div>
+                                <div class="form-group">
+                                    <label>Kind</label>
+                                    <span class="span-kind" :class="'span-kind-' + selectedSpan.kind" x-text="selectedSpan.kind"></span>
+                                </div>
+                                <div class="form-group">
+                                    <label>Duration</label>
+                                    <div x-text="formatDuration(selectedSpan.duration_ms)"></div>
+                                </div>
+                                <template x-if="selectedSpan.error">
+                                    <div class="form-group">
+                                        <label>Error</label>
+                                        <div style="color: var(--danger);" x-text="selectedSpan.error"></div>
+                                    </div>
+                                </template>
+                                <template x-if="selectedSpan.attributes && Object.keys(selectedSpan.attributes).length > 0">
+                                    <div class="form-group">
+                                        <label>Attributes</label>
+                                        <div class="json-view" x-text="formatJson(selectedSpan.attributes)"></div>
+                                    </div>
+                                </template>
+                                <template x-if="selectedSpan.input_data">
+                                    <div class="form-group">
+                                        <label>Input</label>
+                                        <div class="json-view" x-text="formatJson(selectedSpan.input_data)"></div>
+                                    </div>
+                                </template>
+                                <template x-if="selectedSpan.output_data">
+                                    <div class="form-group">
+                                        <label>Output</label>
+                                        <div class="json-view" x-text="formatJson(selectedSpan.output_data)"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+    </main>
+</div>
+</body>
+</html>

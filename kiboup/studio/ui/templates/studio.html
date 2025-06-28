@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div class="adk-shell" x-data="studioApp">
+
+    <!-- Top bar -->
+    <header class="adk-topbar">
+        <span class="logo">KiboStudio</span>
+
+        <select x-model="selectedAgent" @change="onAgentChange()">
+            <option value="">-- Agent --</option>
+            <template x-for="a in agents" :key="a.agent_id">
+                <option :value="a.agent_id" x-text="a.name || a.agent_id"></option>
+            </template>
+        </select>
+
+        <span class="session-id" x-show="currentSession" x-text="'Session: ' + (currentSession?.session_id || '').substring(0, 8)"></span>
+
+        <button class="btn btn-sm" @click="newSession()" :disabled="!selectedAgent">New Session</button>
+
+        <span class="spacer"></span>
+
+        <div class="nav-links">
+            <a href="/traces">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+
+    <!-- Body: left panel | center chat | right detail -->
+    <div class="adk-body">
+
+        <!-- Left panel -->
+        <aside class="adk-left">
+            <div class="panel-tabs">
+                <button :class="{ active: leftTab === 'traces' }" @click="leftTab = 'traces'; loadTraces()">Traces</button>
+                <button :class="{ active: leftTab === 'sessions' }" @click="leftTab = 'sessions'; loadSessions()">Sessions</button>
+                <button :class="{ active: leftTab === 'eval' }" @click="leftTab = 'eval'; loadEvalSets()">Eval</button>
+            </div>
+
+            <div class="panel-body">
+                <!-- Traces list (grouped by agent) -->
+                <template x-if="leftTab === 'traces'">
+                    <div>
+                        <template x-if="groupedTraces.length === 0">
+                            <div class="empty-state" style="padding: 30px 16px;">
+                                <p>No traces yet</p>
+                            </div>
+                        </template>
+                        <template x-for="(group, gi) in groupedTraces" :key="gi">
+                            <div>
+                                <div class="panel-item trace-group-header" @click="toggleTraceGroup(group)">
+                                    <span class="item-title">
+                                        <span x-text="group.expanded ? '&#9660;' : '&#9654;'" style="font-size:10px; margin-right:4px;"></span>
+                                        <span x-text="group.agent_id"></span>
+                                        <span class="badge" style="margin-left:6px; font-size:10px;" x-text="group.count + 'x'"></span>
+                                    </span>
+                                    <span class="item-meta">
+                                        <span x-text="formatDuration(group.totalDuration / group.count) + ' avg'"></span>
+                                        <span x-text="formatTime(group.latest.start_time)"></span>
+                                    </span>
+                                </div>
+                                <template x-if="group.expanded">
+                                    <div>
+                                        <template x-for="t in group.traces" :key="t.trace_id">
+                                            <div class="panel-item" style="padding-left: 28px;"
+                                                 :class="{ selected: selectedTrace?.trace_id === t.trace_id }"
+                                                 @click.stop="selectTrace(t)">
+                                                <span class="item-title" x-text="t.trace_id.substring(0, 12)"></span>
+                                                <span class="item-meta">
+                                                    <span x-text="formatDuration(t.duration_ms)"></span>
+                                                    <span x-text="formatTime(t.start_time)"></span>
+                                                </span>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Sessions list -->
+                <template x-if="leftTab === 'sessions'">
+                    <div>
+                        <template x-if="sessions.length === 0">
+                            <div class="empty-state" style="padding: 30px 16px;">
+                                <p>No sessions</p>
+                            </div>
+                        </template>
+                        <template x-for="s in sessions" :key="s.session_id">
+                            <div class="panel-item"
+                                 :class="{ selected: currentSession?.session_id === s.session_id }"
+                                 @click="selectSession(s)">
+                                <span class="item-title" x-text="s.agent_id || 'Session'"></span>
+                                <span class="item-meta">
+                                    <span x-text="s.session_id.substring(0, 8)"></span>
+                                    <span x-text="formatTime(s.updated_at)"></span>
+                                </span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Eval sets -->
+                <template x-if="leftTab === 'eval'">
+                    <div>
+                        <div style="padding: 8px 14px; border-bottom: 1px solid var(--border); display: flex; gap: 6px;">
+                            <button class="btn btn-sm btn-primary" style="flex:1;" @click="showCreateEvalSet = true">New Eval Set</button>
+                            <button class="btn btn-sm" style="flex:1;" x-show="currentSession" @click="showAddToEvalSet = true">Add Session</button>
+                        </div>
+                        <template x-if="evalSets.length === 0">
+                            <div class="empty-state" style="padding: 30px 16px;">
+                                <p>No eval sets</p>
+                            </div>
+                        </template>
+                        <template x-for="es in evalSets" :key="es.eval_set_id">
+                            <div>
+                                <div class="panel-item"
+                                     :class="{ selected: selectedEvalSet?.eval_set_id === es.eval_set_id }"
+                                     @click="selectEvalSet(es)">
+                                    <span class="item-title" x-text="es.name"></span>
+                                    <span class="item-meta">
+                                        <span x-text="es.agent_id || 'global'"></span>
+                                        <span x-text="formatTime(es.created_at)"></span>
+                                    </span>
+                                </div>
+                                <!-- Cases for selected eval set -->
+                                <template x-if="selectedEvalSet?.eval_set_id === es.eval_set_id">
+                                    <div style="border-bottom: 1px solid var(--border);">
+                                        <div style="padding: 6px 14px; display: flex; gap: 6px;">
+                                            <button class="btn btn-sm btn-primary" style="flex:1; font-size:11px;" @click="runEvalSet()">Run Eval Set</button>
+                                        </div>
+                                        <template x-if="evalCases.length === 0">
+                                            <div style="padding: 10px 14px; font-size: 12px; color: var(--text-muted);">No cases added yet</div>
+                                        </template>
+                                        <template x-for="ec in evalCases" :key="ec.case_id">
+                                            <div class="panel-item" style="padding-left: 28px; font-size: 12px;">
+                                                <span class="item-title" style="font-size:11px;" x-text="'Session ' + (ec.session_id || '').substring(0, 8)"></span>
+                                                <span class="item-meta">
+                                                    <span class="badge" :class="ec.status === 'completed' ? 'badge-completed' : (ec.status === 'no_trace' ? 'badge-failed' : '')" x-text="ec.status || 'pending'" style="font-size:10px;"></span>
+                                                </span>
+                                                <template x-if="ec.result && ec.result.metrics">
+                                                    <div style="margin-top:4px; font-size:10px; color: var(--text-secondary);">
+                                                        <template x-for="[mk, mv] in Object.entries(ec.result.metrics).filter(([k]) => !['total_spans','llm_calls','tool_calls','error_count','total_duration_ms','llm_duration_ms','llm_time_ratio','eval_method'].includes(k))" :key="mk">
+                                                            <span style="margin-right:8px;">
+                                                                <span x-text="mk.replace(/_/g,' ')"></span>:
+                                                                <strong x-text="typeof mv === 'number' ? (mv * 100).toFixed(0) + '%' : mv"></strong>
+                                                            </span>
+                                                        </template>
+                                                    </div>
+                                                </template>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </aside>
+
+        <!-- Center chat -->
+        <section class="adk-center">
+            <div class="adk-chat-messages" id="chat-messages">
+                <template x-if="messages.length === 0">
+                    <div class="adk-chat-empty">
+                        <div class="icon">&#9993;</div>
+                        <p x-text="selectedAgent ? 'Send a message to start' : 'Select an agent to begin'"></p>
+                    </div>
+                </template>
+                <template x-for="(msg, idx) in messages" :key="idx">
+                    <div class="adk-bubble" :class="msg.role">
+                        <div class="bubble-agent" x-show="msg.role === 'assistant'" x-text="msg.agent || selectedAgent"></div>
+                        <template x-if="msg.role === 'assistant'">
+                            <div class="md-content" x-html="renderMarkdown(msg.content)"></div>
+                        </template>
+                        <template x-if="msg.role !== 'assistant'">
+                            <span x-text="msg.content"></span>
+                        </template>
+                        <div class="bubble-meta" x-text="msg.ts || ''"></div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="adk-input-bar">
+                <textarea
+                    x-model="chatInput"
+                    placeholder="Type a message..."
+                    rows="1"
+                    @keydown.enter.prevent="if (!$event.shiftKey) sendMessage()"
+                    :disabled="!selectedAgent || sending"></textarea>
+                <button class="btn-send" @click="sendMessage()" :disabled="!chatInput.trim() || sending || !selectedAgent">&#9654;</button>
+            </div>
+        </section>
+
+        <!-- Right detail panel -->
+        <aside class="adk-right" x-show="selectedTrace || selectedSpan">
+            <div class="detail-header">
+                <span x-text="selectedSpan ? selectedSpan.name : (selectedTrace ? 'Trace ' + selectedTrace.trace_id.substring(0, 8) : '')"></span>
+                <span class="spacer" style="flex:1"></span>
+                <button class="btn btn-sm" @click="selectedTrace = null; selectedSpan = null; spans = [];">&#10005;</button>
+            </div>
+
+            <!-- Span tree when trace selected -->
+            <div class="span-tree" x-show="selectedTrace && spans.length > 0" style="border-bottom: 1px solid var(--border); max-height: 200px; overflow-y: auto;">
+                <template x-for="sp in spans" :key="sp.span_id">
+                    <div class="span-item" :class="{ 'selected': selectedSpan?.span_id === sp.span_id }"
+                         @click="selectSpan(sp)"
+                         :style="'padding-left: ' + (12 + getIndent(sp) * 20) + 'px'">
+                        <span class="span-kind" :class="'span-kind-' + sp.kind" x-text="sp.kind"></span>
+                        <span class="span-name" x-text="sp.name"></span>
+                        <span class="span-duration" x-text="formatDuration(sp.duration_ms)"></span>
+                    </div>
+                </template>
+            </div>
+
+            <div class="detail-tabs">
+                <button :class="{ active: detailTab === 'event' }" @click="detailTab = 'event'">Event</button>
+                <button :class="{ active: detailTab === 'request' }" @click="detailTab = 'request'">Request</button>
+                <button :class="{ active: detailTab === 'response' }" @click="detailTab = 'response'">Response</button>
+                <button :class="{ active: detailTab === 'graph' }" @click="detailTab = 'graph'">Graph</button>
+            </div>
+
+            <div class="detail-body">
+                <!-- Event tab -->
+                <template x-if="detailTab === 'event'">
+                    <div>
+                        <template x-if="selectedSpan">
+                            <div>
+                                <table style="font-size: 12px;">
+                                    <tbody>
+                                        <tr><td style="font-weight:600; width:110px; color:var(--text-muted);">Span ID</td><td x-text="selectedSpan.span_id"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Kind</td><td><span class="span-kind" :class="'span-kind-' + selectedSpan.kind" x-text="selectedSpan.kind"></span></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Name</td><td x-text="selectedSpan.name"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Duration</td><td x-text="formatDuration(selectedSpan.duration_ms)"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Start</td><td x-text="selectedSpan.start_time || '-'"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">End</td><td x-text="selectedSpan.end_time || '-'"></td></tr>
+                                        <tr x-show="selectedSpan.parent_span_id"><td style="font-weight:600; color:var(--text-muted);">Parent</td><td x-text="selectedSpan.parent_span_id"></td></tr>
+                                    </tbody>
+                                </table>
+                                <template x-if="selectedSpan.attributes && Object.keys(selectedSpan.attributes).length">
+                                    <div style="margin-top: 12px;">
+                                        <template x-if="getTokenInfo(selectedSpan)">
+                                            <div style="margin-bottom: 12px;">
+                                                <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Token Usage</div>
+                                                <table style="font-size: 12px;">
+                                                    <tbody>
+                                                        <tr><td style="font-weight:600; width:110px; color:var(--text-muted);">Model</td><td x-text="getTokenInfo(selectedSpan).model"></td></tr>
+                                                        <tr><td style="font-weight:600; color:var(--text-muted);">Input tokens</td><td x-text="getTokenInfo(selectedSpan).input"></td></tr>
+                                                        <tr><td style="font-weight:600; color:var(--text-muted);">Output tokens</td><td x-text="getTokenInfo(selectedSpan).output"></td></tr>
+                                                        <tr><td style="font-weight:600; color:var(--text-muted);">Total tokens</td><td x-text="getTokenInfo(selectedSpan).total"></td></tr>
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        </template>
+                                        <div style="font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; margin-bottom: 4px;">Attributes</div>
+                                        <div class="json-view" x-text="formatJson(selectedSpan.attributes)"></div>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                        <template x-if="!selectedSpan && selectedTrace">
+                            <div>
+                                <table style="font-size: 12px;">
+                                    <tbody>
+                                        <tr><td style="font-weight:600; width:110px; color:var(--text-muted);">Trace ID</td><td x-text="selectedTrace.trace_id"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Agent</td><td x-text="selectedTrace.agent_id || '-'"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Duration</td><td x-text="formatDuration(selectedTrace.duration_ms)"></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Status</td><td><span class="badge" :class="'badge-' + selectedTrace.status" x-text="selectedTrace.status"></span></td></tr>
+                                        <tr><td style="font-weight:600; color:var(--text-muted);">Start</td><td x-text="selectedTrace.start_time || '-'"></td></tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Request tab -->
+                <template x-if="detailTab === 'request'">
+                    <div>
+                        <template x-if="selectedSpan">
+                            <div class="json-view" x-text="formatJson(selectedSpan.input_data)"></div>
+                        </template>
+                        <template x-if="!selectedSpan && selectedTrace">
+                            <div class="json-view" x-text="formatJson(traceInput)"></div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Response tab -->
+                <template x-if="detailTab === 'response'">
+                    <div>
+                        <template x-if="selectedSpan">
+                            <div class="json-view" x-text="formatJson(selectedSpan.output_data)"></div>
+                        </template>
+                        <template x-if="!selectedSpan && selectedTrace">
+                            <div class="json-view" x-text="formatJson(traceOutput)"></div>
+                        </template>
+                    </div>
+                </template>
+
+                <!-- Graph tab -->
+                <template x-if="detailTab === 'graph'">
+                    <div class="graph-container" x-html="buildGraph()"></div>
+                </template>
+            </div>
+        </aside>
+    </div>
+
+    <!-- Eval Set create modal -->
+    <template x-if="showCreateEvalSet">
+        <div class="modal-overlay" @click.self="showCreateEvalSet = false">
+            <div class="modal" style="min-width: 400px;">
+                <h3>New Eval Set</h3>
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" x-model="newEvalSetName" placeholder="e.g. Smoke Test">
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" @click="showCreateEvalSet = false">Cancel</button>
+                    <button class="btn btn-primary" @click="createEvalSet()" :disabled="!newEvalSetName.trim()">Create</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Add to Eval Set modal -->
+    <template x-if="showAddToEvalSet">
+        <div class="modal-overlay" @click.self="showAddToEvalSet = false">
+            <div class="modal" style="min-width: 400px;">
+                <h3>Add Session to Eval Set</h3>
+                <div class="form-group">
+                    <label>Eval Set</label>
+                    <select x-model="addToEvalSetId">
+                        <option value="">-- Select --</option>
+                        <template x-for="es in evalSets" :key="es.eval_set_id">
+                            <option :value="es.eval_set_id" x-text="es.name"></option>
+                        </template>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button class="btn" @click="showAddToEvalSet = false">Cancel</button>
+                    <button class="btn btn-primary" @click="addSessionToEvalSet()" :disabled="!addToEvalSetId">Add</button>
+                </div>
+            </div>
+        </div>
+    </template>
+
+</div>
+</body>
+</html>

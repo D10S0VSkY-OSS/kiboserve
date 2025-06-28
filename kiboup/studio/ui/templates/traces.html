@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Traces - KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces" style="font-weight:600; color:var(--accent);">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="tracesPage">
+        <div class="page-header">
+            <h2>Traces</h2>
+            <button class="btn" @click="loadTraces()">Refresh</button>
+        </div>
+
+        <template x-if="loading">
+            <div class="empty-state"><p class="loading">Loading traces...</p></div>
+        </template>
+
+        <template x-if="!loading && traces.length === 0">
+            <div class="empty-state">
+                <div class="icon">&#9776;</div>
+                <p>No traces recorded yet.</p>
+                <p style="margin-top: 8px; font-size: 12px;">Connect an agent with StudioTracingMiddleware to start capturing traces.</p>
+            </div>
+        </template>
+
+        <div class="card" x-show="!loading && traces.length > 0">
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Trace ID</th>
+                            <th>Agent</th>
+                            <th>Status</th>
+                            <th>Spans</th>
+                            <th>Duration</th>
+                            <th>Time</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <template x-for="t in traces" :key="t.trace_id">
+                            <tr @click="window.location.href='/traces/' + t.trace_id">
+                                <td style="font-family: var(--font-mono); font-size: 12px;" x-text="t.trace_id.substring(0, 8) + '...'"></td>
+                                <td x-text="t.agent_id || '-'"></td>
+                                <td><span class="badge" :class="'badge-' + t.status" x-text="t.status"></span></td>
+                                <td x-text="t.span_count || 0"></td>
+                                <td x-text="formatDuration(t.duration_ms)"></td>
+                                <td x-text="formatTime(t.start_time)"></td>
+                                <td>
+                                    <button class="btn btn-sm btn-danger" @click.stop="deleteTrace(t.trace_id)">&#10005;</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

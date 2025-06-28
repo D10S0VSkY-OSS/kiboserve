@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flags &amp; Params - KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags" style="font-weight:600; color:var(--accent);">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="flagsPage">
+        <div class="page-header">
+            <h2>Feature Flags &amp; Parameters</h2>
+        </div>
+
+        <!-- Agent selector -->
+        <div class="card">
+            <div style="display: flex; gap: 12px; align-items: end;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Agent</label>
+                    <select x-model="selectedAgent" @change="loadFlags(); loadParams();">
+                        <option value="_global">Global (all agents)</option>
+                        <template x-for="a in agents" :key="a.agent_id">
+                            <option :value="a.agent_id" x-text="a.agent_id"></option>
+                        </template>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Feature Flags -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Feature Flags</h3>
+                <button class="btn btn-primary" @click="showNewFlag = true">Add Flag</button>
+            </div>
+
+            <template x-if="showNewFlag">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: end;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Flag Name</label>
+                        <input type="text" x-model="newFlag.name" placeholder="enable_rag">
+                    </div>
+                    <div class="form-group" style="margin-bottom: 0;">
+                        <label>Enabled</label>
+                        <label class="toggle">
+                            <input type="checkbox" x-model="newFlag.enabled">
+                            <span class="slider"></span>
+                        </label>
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Value</label>
+                        <input type="text" x-model="newFlag.value" placeholder="optional value">
+                    </div>
+                    <button class="btn btn-primary" @click="addFlag()">Save</button>
+                    <button class="btn" @click="showNewFlag = false">Cancel</button>
+                </div>
+            </template>
+
+            <template x-if="flags.length === 0">
+                <div class="empty-state" style="padding: 24px 0;">
+                    <p>No flags defined for this scope.</p>
+                </div>
+            </template>
+
+            <template x-if="flags.length > 0">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                        <th>Agent</th>
+                        <th>Enabled</th>
+                        <th style="width: 80px">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template x-for="f in flags" :key="f.flag_id">
+                        <tr>
+                            <td x-text="f.name"></td>
+                            <td><code x-text="f.value ?? '-'"></code></td>
+                            <td><span class="badge" x-text="f.agent_id"></span></td>
+                            <td>
+                                <label class="toggle">
+                                    <input type="checkbox" :checked="f.enabled" @change="toggleFlag(f)">
+                                    <span class="slider"></span>
+                                </label>
+                            </td>
+                            <td>
+                                <button class="btn btn-danger" style="font-size: 11px; padding: 2px 8px;" @click="deleteFlag(f.flag_id)">Del</button>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </template>
+        </div>
+
+        <!-- Parameters -->
+        <div class="card">
+            <div class="card-header">
+                <h3>Parameters</h3>
+                <button class="btn btn-primary" @click="showNewParam = true">Add Parameter</button>
+            </div>
+
+            <template x-if="showNewParam">
+                <div style="display: flex; gap: 8px; margin-bottom: 12px; align-items: end;">
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Name</label>
+                        <input type="text" x-model="newParam.key" placeholder="max_tokens">
+                    </div>
+                    <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                        <label>Value</label>
+                        <input type="text" x-model="newParam.value" placeholder="4096">
+                    </div>
+                    <button class="btn btn-primary" @click="addParam()">Save</button>
+                    <button class="btn" @click="showNewParam = false">Cancel</button>
+                </div>
+            </template>
+
+            <template x-if="params.length === 0">
+                <div class="empty-state" style="padding: 24px 0;">
+                    <p>No parameters defined for this scope.</p>
+                </div>
+            </template>
+
+            <template x-if="params.length > 0">
+                <table class="table">
+                    <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Value</th>
+                        <th>Agent</th>
+                        <th style="width: 80px">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <template x-for="p in params" :key="p.param_id">
+                        <tr>
+                            <td x-text="p.name"></td>
+                            <td><code x-text="p.value"></code></td>
+                            <td><span class="badge" x-text="p.agent_id"></span></td>
+                            <td>
+                                <button class="btn btn-danger" style="font-size: 11px; padding: 2px 8px;" @click="deleteParam(p.param_id)">Del</button>
+                            </td>
+                        </tr>
+                    </template>
+                    </tbody>
+                </table>
+            </template>
+        </div>
+    </main>
+</div>
+</body>
+</html>

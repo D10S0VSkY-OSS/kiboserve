@@ -35,3 +35,18 @@ try:
     __all__.extend(["KiboAgentMcp", "KiboMcpClient"])
 except ImportError:
     pass
+
+try:
+    from kiboup.studio.server import KiboStudio
+    from kiboup.studio.sdk import StudioClient
+    from kiboup.studio.tracer import StudioTracer
+    from kiboup.studio.middleware import StudioTracingMiddleware
+
+    __all__.extend([
+        "KiboStudio",
+        "StudioClient",
+        "StudioTracer",
+        "StudioTracingMiddleware",
+    ])
+except ImportError:
+    pass

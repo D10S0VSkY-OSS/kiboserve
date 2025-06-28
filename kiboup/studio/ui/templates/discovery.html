@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discovery - KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery" style="font-weight:600; color:var(--accent);">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="discoveryPage">
+        <div class="page-header">
+            <h2>Discovery</h2>
+            <button class="btn btn-primary" @click="showRegister = true">Register Agent</button>
+        </div>
+
+        <!-- Register modal -->
+        <template x-if="showRegister">
+            <div class="modal-overlay" @click.self="showRegister = false">
+                <div class="modal">
+                    <h3>Register Agent</h3>
+                    <div class="form-group">
+                        <label>Agent ID</label>
+                        <input type="text" x-model="form.agent_id" placeholder="my-agent">
+                    </div>
+                    <div class="form-group">
+                        <label>URL</label>
+                        <input type="text" x-model="form.url" placeholder="http://localhost:8080">
+                    </div>
+                    <div class="form-group">
+                        <label>Capabilities (comma separated)</label>
+                        <input type="text" x-model="form.capabilities" placeholder="chat, search, rag">
+                    </div>
+                    <div class="form-group">
+                        <label>Heartbeat Interval (seconds)</label>
+                        <input type="number" x-model.number="form.heartbeat_interval_s" value="30">
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn" @click="showRegister = false">Cancel</button>
+                        <button class="btn btn-primary" @click="registerAgent()">Register</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <template x-if="loading">
+            <div class="empty-state"><p class="loading">Loading...</p></div>
+        </template>
+
+        <template x-if="!loading && agents.length === 0">
+            <div class="empty-state">
+                <div class="icon">&#8857;</div>
+                <p>No agents registered.</p>
+                <p style="margin-top: 8px; font-size: 12px;">Agents can self-register via the SDK or you can register them manually.</p>
+            </div>
+        </template>
+
+        <template x-if="!loading && agents.length > 0">
+            <div class="card-grid">
+                <template x-for="a in agents" :key="a.agent_id">
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 style="display: flex; align-items: center; gap: 8px;">
+                                <span class="health-dot"
+                                      :class="{ 'healthy': a.status === 'healthy', 'degraded': a.status === 'degraded', 'unreachable': a.status === 'unreachable' || a.status === 'busy' }"></span>
+                                <span x-text="a.agent_id"></span>
+                            </h3>
+                            <span class="badge" :class="'badge-' + a.status" x-text="a.status"></span>
+                        </div>
+
+                        <div style="font-size: 13px; margin-bottom: 8px;">
+                            <div style="color: var(--text-muted); margin-bottom: 4px;">
+                                <strong>URL:</strong> <span x-text="a.endpoint"></span>
+                            </div>
+                            <template x-if="a.capabilities && a.capabilities.length > 0">
+                                <div style="display: flex; gap: 4px; flex-wrap: wrap; margin-bottom: 4px;">
+                                    <template x-for="cap in a.capabilities" :key="cap">
+                                        <span class="badge" x-text="cap"></span>
+                                    </template>
+                                </div>
+                            </template>
+                            <div style="color: var(--text-muted);">
+                                <strong>Last heartbeat:</strong> <span x-text="a.last_heartbeat || 'never'"></span>
+                            </div>
+                            <template x-if="a.meta && a.meta.memory_mb">
+                                <div style="color: var(--text-muted);">
+                                    <strong>Memory:</strong> <span x-text="a.meta.memory_mb + ' MB'"></span>
+                                </div>
+                            </template>
+                        </div>
+
+                        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+                            <button class="btn" @click="deregisterAgent(a.agent_id)">Deregister</button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </main>
+</div>
+</body>
+</html>

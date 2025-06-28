@@ -22,7 +22,7 @@ class _ApiKeyAuth(httpx.Auth):
 
 
 class KiboMcpClient:
-    """Client for MCP servers.
+    """Client for MCP servers with optional KiboStudio integration.
 
     Security:
         Pass ``auth`` to authenticate with the MCP server:
@@ -32,12 +32,25 @@ class KiboMcpClient:
 
         Pass ``api_key`` for X-API-Key header auth (used by ``ApiKeyMiddleware``).
 
+    Studio integration:
+        Pass ``studio_url`` and ``agent_id`` to automatically create a
+        ``StudioClient`` and manage its lifecycle. Access it via the
+        ``studio`` property.
+
+        Alternatively, pass a pre-built ``StudioClient`` instance via
+        the ``studio`` parameter for full control over its configuration.
+
     Example:
         async with KiboMcpClient("http://localhost:8000/sse", auth="my-bearer-token") as client:
             tools = await client.list_tools()
 
-        async with KiboMcpClient("http://localhost:8000/sse", api_key="sk-abc") as client:
+        async with KiboMcpClient(
+            url="http://localhost:8080/sse",
+            studio_url="http://localhost:8000",
+            agent_id="my-agent",
+        ) as client:
             tools = await client.list_tools()
+            enabled = await client.studio.is_flag_enabled("my_flag")
     """
 
     def __init__(
@@ -45,6 +58,11 @@ class KiboMcpClient:
         url: str = "http://localhost:8000/sse",
         auth: Union[str, httpx.Auth, None] = None,
         api_key: Optional[str] = None,
+        *,
+        studio=None,
+        studio_url: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        **studio_kwargs,
     ):
         self._url = url
         if api_key is not None and auth is None:
@@ -54,15 +72,39 @@ class KiboMcpClient:
         self._client: Optional[FastMCPClient] = None
         self.logger = create_logger("kiboup.mcp_client")
 
+        self._studio = studio
+        self._studio_owned = False
+        if self._studio is None and studio_url:
+            from kiboup.studio import StudioClient
+
+            self._studio = StudioClient(
+                studio_url=studio_url,
+                agent_id=agent_id or "",
+                **studio_kwargs,
+            )
+            self._studio_owned = True
+
+    @property
+    def studio(self):
+        """Access the attached StudioClient (None if not configured)."""
+        return self._studio
+
     async def __aenter__(self):
         kwargs: Dict[str, Any] = {}
         if self._auth is not None:
             kwargs["auth"] = self._auth
         self._client = FastMCPClient(self._url, **kwargs)
         await self._client.__aenter__()
+        if self._studio is not None:
+            await self._studio.__aenter__()
         return self
 
     async def __aexit__(self, *args):
+        if self._studio is not None:
+            try:
+                await self._studio.__aexit__(*args)
+            except Exception:
+                pass
         if self._client:
             await self._client.__aexit__(*args)
             self._client = None

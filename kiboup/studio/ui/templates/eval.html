@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Evaluation - KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces">Traces</a>
+            <a href="/prompts">Prompts</a>
+            <a href="/eval" style="font-weight:600; color:var(--accent);">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="evalPage">
+        <div class="page-header">
+            <h2>Evaluation</h2>
+        </div>
+
+        <!-- Run evaluation card -->
+        <div class="card">
+            <div class="card-header"><h3>Run Evaluation</h3></div>
+            <div style="display: flex; gap: 12px; align-items: end;">
+                <div class="form-group" style="flex: 1; margin-bottom: 0;">
+                    <label>Select Trace</label>
+                    <select x-model="selectedTrace">
+                        <option value="">-- Select a trace --</option>
+                        <template x-for="t in traces" :key="t.trace_id">
+                            <option :value="t.trace_id"
+                                    x-text="(t.agent_id || 'unknown') + ' - ' + t.trace_id.substring(0, 8) + '...'"></option>
+                        </template>
+                    </select>
+                </div>
+                <button class="btn btn-primary" @click="runEval()" :disabled="!selectedTrace || running">
+                    <span x-show="!running">Run Evaluation</span>
+                    <span x-show="running" class="loading">Running...</span>
+                </button>
+                <button class="btn" @click="showAll()" x-show="filterByTrace" style="margin-left: 4px;">
+                    Show All
+                </button>
+            </div>
+        </div>
+
+        <!-- Results -->
+        <template x-if="loading">
+            <div class="empty-state"><p class="loading">Loading...</p></div>
+        </template>
+
+        <template x-if="!loading && results.length === 0">
+            <div class="empty-state">
+                <div class="icon">&#9733;</div>
+                <p>No evaluations run yet.</p>
+                <p style="margin-top: 8px; font-size: 12px;">Select a trace above and click "Run Evaluation".</p>
+            </div>
+        </template>
+
+        <template x-for="r in results" :key="r.eval_id">
+            <div class="card">
+                <div class="card-header">
+                    <h3>
+                        <span class="badge" :class="'badge-' + r.status" x-text="r.status"></span>
+                        &nbsp;
+                        <span style="font-size: 12px; color: var(--text-muted);" x-text="'Trace: ' + r.trace_id.substring(0, 12) + '...'"></span>
+                    </h3>
+                    <span style="font-size: 12px; color: var(--text-muted);" x-text="r.created_at"></span>
+                </div>
+
+                <template x-if="r.error">
+                    <div style="color: var(--danger); margin-bottom: 12px;" x-text="r.error"></div>
+                </template>
+
+                <template x-if="r.metrics && Object.keys(r.metrics).length > 0">
+                    <div>
+                        <template x-for="[key, value] in Object.entries(r.metrics)" :key="key">
+                            <div class="metric-bar">
+                                <span class="metric-label" x-text="key.replace(/_/g, ' ')"></span>
+                                <template x-if="isMetricScore(key)">
+                                    <div class="metric-track">
+                                        <div class="metric-fill"
+                                             :style="{ width: (value * 100) + '%', background: getScoreColor(value) }">
+                                        </div>
+                                    </div>
+                                </template>
+                                <span class="metric-value" x-text="formatScore(value)"></span>
+                            </div>
+                        </template>
+                    </div>
+                </template>
+            </div>
+        </template>
+    </main>
+</div>
+</body>
+</html>

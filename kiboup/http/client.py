@@ -9,7 +9,7 @@ from kiboup.shared.logger import create_logger
 
 
 class KiboAgentClient:
-    """HTTP client for KiboAgentApp servers.
+    """HTTP client for KiboAgentApp servers with optional KiboStudio integration.
 
     Example:
         async with KiboAgentClient("http://localhost:8080", api_key="sk-abc") as client:
@@ -19,6 +19,15 @@ class KiboAgentClient:
         async with KiboAgentClient("http://localhost:8080", api_key="sk-abc") as client:
             async for chunk in client.stream({"prompt": "Hello"}):
                 print(chunk)
+
+    Studio integration:
+        async with KiboAgentClient(
+            base_url="http://localhost:8080",
+            studio_url="http://localhost:8000",
+            agent_id="my-agent",
+        ) as client:
+            result = await client.invoke({"prompt": "Hello"})
+            enabled = await client.studio.is_flag_enabled("my_flag")
     """
 
     def __init__(
@@ -26,12 +35,34 @@ class KiboAgentClient:
         base_url: str = "http://localhost:8080",
         api_key: Optional[str] = None,
         timeout: float = 120.0,
+        *,
+        studio=None,
+        studio_url: Optional[str] = None,
+        agent_id: Optional[str] = None,
+        **studio_kwargs,
     ):
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._timeout = timeout
         self._client: Optional[httpx.AsyncClient] = None
         self.logger = create_logger("kiboup.agent_client")
+
+        self._studio = studio
+        self._studio_owned = False
+        if self._studio is None and studio_url:
+            from kiboup.studio import StudioClient
+
+            self._studio = StudioClient(
+                studio_url=studio_url,
+                agent_id=agent_id or "",
+                **studio_kwargs,
+            )
+            self._studio_owned = True
+
+    @property
+    def studio(self):
+        """Access the attached StudioClient (None if not configured)."""
+        return self._studio
 
     def _headers(self) -> Dict[str, str]:
         headers: Dict[str, str] = {}
@@ -45,9 +76,16 @@ class KiboAgentClient:
             timeout=self._timeout,
             headers=self._headers(),
         )
+        if self._studio is not None:
+            await self._studio.__aenter__()
         return self
 
     async def __aexit__(self, *args):
+        if self._studio is not None:
+            try:
+                await self._studio.__aexit__(*args)
+            except Exception:
+                pass
         if self._client:
             await self._client.aclose()
             self._client = None

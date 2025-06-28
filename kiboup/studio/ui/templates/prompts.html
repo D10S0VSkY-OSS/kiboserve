@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prompts - KiboStudio</title>
+    <link rel="stylesheet" href="/static/css/studio.css">
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="/static/js/studio.js"></script>
+</head>
+<body>
+<div>
+    <header class="adk-topbar">
+        <a href="/" class="logo">KiboStudio</a>
+        <span class="spacer"></span>
+        <div class="nav-links">
+            <a href="/traces">Traces</a>
+            <a href="/prompts" style="font-weight:600; color:var(--accent);">Prompts</a>
+            <a href="/eval">Eval</a>
+            <a href="/discovery">Discovery</a>
+            <a href="/flags">Flags</a>
+        </div>
+    </header>
+    <main style="padding: 24px 32px; max-width: 1200px; margin: 0 auto;" x-data="promptsPage">
+        <div class="page-header">
+            <h2>Prompt Management</h2>
+            <button class="btn btn-primary" @click="showCreate = true">+ New Prompt</button>
+        </div>
+
+        <template x-if="loading">
+            <div class="empty-state"><p class="loading">Loading...</p></div>
+        </template>
+
+        <template x-if="!loading && prompts.length === 0 && !showCreate">
+            <div class="empty-state">
+                <div class="icon">&#9998;</div>
+                <p>No prompts created yet.</p>
+            </div>
+        </template>
+
+        <!-- Create modal -->
+        <template x-if="showCreate">
+            <div class="modal-overlay" @click.self="showCreate = false">
+                <div class="modal">
+                    <h3>Create Prompt</h3>
+                    <div class="form-group">
+                        <label>Name</label>
+                        <input type="text" x-model="newPrompt.name" placeholder="e.g., summarizer">
+                    </div>
+                    <div class="form-group">
+                        <label>Description</label>
+                        <input type="text" x-model="newPrompt.description" placeholder="What this prompt does">
+                    </div>
+                    <div class="form-group">
+                        <label>Tags (comma-separated)</label>
+                        <input type="text" x-model="newPrompt.tags" placeholder="rag, summarize">
+                    </div>
+                    <div class="form-group">
+                        <label>Template Content</label>
+                        <textarea x-model="newPrompt.content" placeholder="You are a helpful assistant. {{context}}" rows="6"></textarea>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn" @click="showCreate = false">Cancel</button>
+                        <button class="btn btn-primary" @click="createPrompt()">Create</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Versions modal -->
+        <template x-if="showVersions">
+            <div class="modal-overlay" @click.self="showVersions = null">
+                <div class="modal">
+                    <h3>Versions</h3>
+                    <div class="table-wrap" style="margin-bottom: 16px;">
+                        <table>
+                            <thead><tr><th>Version</th><th>Active</th><th>Created</th><th></th></tr></thead>
+                            <tbody>
+                                <template x-for="v in versions" :key="v.version_id">
+                                    <tr>
+                                        <td>v<span x-text="v.version"></span></td>
+                                        <td>
+                                            <span x-show="v.is_active" class="badge badge-ok">Active</span>
+                                        </td>
+                                        <td style="font-size: 12px;" x-text="v.created_at"></td>
+                                        <td>
+                                            <button x-show="!v.is_active" class="btn btn-sm"
+                                                    @click="activateVersion(showVersions, v.version)">Activate</button>
+                                        </td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <h4 style="margin-bottom: 8px; font-size: 14px;">New Version</h4>
+                    <div class="form-group">
+                        <label>Content</label>
+                        <textarea x-model="newVersion.content" rows="4"></textarea>
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 8px;">
+                        <label class="toggle">
+                            <input type="checkbox" x-model="newVersion.activate">
+                            <span class="slider"></span>
+                        </label>
+                        <span style="font-size: 13px;">Activate immediately</span>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn" @click="showVersions = null">Close</button>
+                        <button class="btn btn-primary" @click="createVersion()">Create Version</button>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <div class="card" x-show="!loading && prompts.length > 0">
+            <div class="table-wrap">
+                <table>
+                    <thead><tr><th>Name</th><th>Description</th><th>Active Version</th><th>Tags</th><th></th></tr></thead>
+                    <tbody>
+                        <template x-for="p in prompts" :key="p.prompt_id">
+                            <tr>
+                                <td style="font-weight: 600;" x-text="p.name"></td>
+                                <td x-text="p.description || '-'"></td>
+                                <td>v<span x-text="p.active_version || '-'"></span></td>
+                                <td>
+                                    <template x-for="tag in (p.tags || [])" :key="tag">
+                                        <span class="badge badge-pending" style="margin-right: 4px;" x-text="tag"></span>
+                                    </template>
+                                </td>
+                                <td style="white-space: nowrap;">
+                                    <button class="btn btn-sm" @click="viewVersions(p.prompt_id)">Versions</button>
+                                    <button class="btn btn-sm btn-danger" @click="deletePrompt(p.prompt_id)">&#10005;</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+</div>
+</body>
+</html>

@@ -9,6 +9,7 @@ import threading
 import time
 import uuid
 from collections.abc import Sequence
+from datetime import datetime, timezone
 from typing import Any, Callable, Dict, Optional
 
 from starlette.applications import Starlette
@@ -47,6 +48,7 @@ class KiboAgentApp(Starlette):
         lifespan: Optional[Lifespan] = None,
         middleware: Sequence[Middleware] | None = None,
         api_keys: Optional[Dict[str, str]] = None,
+        studio=None,
     ):
         self.handlers: Dict[str, Callable] = {}
         self._ping_handler: Optional[Callable] = None
@@ -54,6 +56,7 @@ class KiboAgentApp(Starlette):
         self._active_tasks: Dict[str, Dict[str, Any]] = {}
         self._task_lock = threading.Lock()
         self._forced_health_status: Optional[HealthStatus] = None
+        self._studio = studio
 
         all_middleware = list(middleware or [])
         if api_keys:
@@ -72,6 +75,10 @@ class KiboAgentApp(Starlette):
         self.logger = create_logger("kiboup.agent", debug)
 
     # -- Decorators --
+
+    def attach_studio(self, studio):
+        """Attach a StudioClient for automatic trace reporting."""
+        self._studio = studio
 
     def entrypoint(self, func: Callable) -> Callable:
         """Register a function as the main invocation handler (POST /invocations)."""
@@ -309,6 +316,70 @@ class KiboAgentApp(Starlette):
         ctx = contextvars.copy_context()
         return await loop.run_in_executor(None, ctx.run, handler, *args)
 
+    @staticmethod
+    def _utc_now() -> str:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+    async def _send_trace(self, context, payload, result, duration, status="ok", error=None):
+        """Build and send trace data to KiboStudio."""
+        if not self._studio:
+            return
+        trace_id = context.request_id or str(uuid.uuid4())
+        agent_id = getattr(self._studio, "_agent_id", "unknown")
+        start_time = self._utc_now()
+        llm_usage = getattr(context, "_llm_usage", None)
+
+        input_data = None
+        try:
+            input_data = payload if isinstance(payload, dict) else {"raw": str(payload)}
+        except Exception:
+            pass
+
+        output_data = None
+        try:
+            if isinstance(result, dict):
+                output_data = result
+            elif result is not None:
+                output_data = {"raw": str(result)}
+        except Exception:
+            pass
+
+        span_attrs = {}
+        if llm_usage:
+            usage_dict = llm_usage.to_dict() if hasattr(llm_usage, "to_dict") else {}
+            span_attrs["llm.model"] = usage_dict.get("model", "")
+            span_attrs["llm.provider"] = usage_dict.get("provider", "")
+            span_attrs["llm.input_tokens"] = usage_dict.get("input_tokens", 0)
+            span_attrs["llm.output_tokens"] = usage_dict.get("output_tokens", 0)
+            span_attrs["llm.total_tokens"] = usage_dict.get("total_tokens", 0)
+
+        trace_data = {
+            "trace_id": trace_id,
+            "agent_id": agent_id,
+            "session_id": context.session_id,
+            "request_id": context.request_id,
+            "spans": [
+                {
+                    "span_id": str(uuid.uuid4()),
+                    "name": "invocation",
+                    "kind": "invocation",
+                    "start_time": start_time,
+                    "end_time": self._utc_now(),
+                    "duration_ms": round(duration * 1000, 2),
+                    "status": status,
+                    "input_data": input_data,
+                    "output_data": output_data,
+                    "error": error,
+                    "attributes": span_attrs,
+                    "agent_id": agent_id,
+                }
+            ],
+        }
+        try:
+            await self._studio.send_traces(trace_data)
+        except Exception as exc:
+            self.logger.warning("Failed to send trace: %s", exc)
+
     async def _handle_invocation(self, request):
         context = self._build_context(request)
         start = time.time()
@@ -339,6 +410,9 @@ class KiboAgentApp(Starlette):
                 context,
                 llm_usage=llm_usage,
             )
+
+            await self._send_trace(context, payload, result, duration)
+
             return Response(self._serialize(result), media_type="application/json")
 
         except json.JSONDecodeError as exc:
@@ -346,7 +420,9 @@ class KiboAgentApp(Starlette):
                 {"error": "Invalid JSON", "details": str(exc)}, status_code=400
             )
         except Exception as exc:
-            self._log(logging.ERROR, "Invocation failed (%.3fs)" % (time.time() - start), context, exc_info=True)
+            duration = time.time() - start
+            self._log(logging.ERROR, "Invocation failed (%.3fs)" % duration, context, exc_info=True)
+            await self._send_trace(context, {}, None, duration, status="error", error=str(exc))
             return JSONResponse({"error": str(exc)}, status_code=500)
 
     def _handle_ping(self, request):
