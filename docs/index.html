@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KiboUP - Deploy AI Agents via HTTP, A2A &amp; MCP</title>
+    <meta name="description" content="Framework-agnostic Python library for deploying AI agents with built-in observability, prompt management, evaluation, and agent discovery through KiboStudio.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>">
+</head>
+<body>
+    <!-- Nav -->
+    <nav class="nav" id="nav">
+        <div class="nav-inner">
+            <a href="#" class="nav-logo">Kibo<span>UP</span></a>
+            <div class="nav-links">
+                <a href="#protocols">Protocols</a>
+                <a href="#studio">Studio</a>
+                <a href="#examples">Examples</a>
+                <a href="https://github.com/pywisecloud/kiboserve" target="_blank" class="nav-gh">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/></svg>
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero -->
+    <section class="hero">
+        <div class="hero-glow"></div>
+        <div class="container">
+            <div class="hero-badge">Open Source Python Library</div>
+            <h1>Deploy AI Agents<br>with <span class="gradient-text">One Codebase</span></h1>
+            <p class="hero-sub">Framework-agnostic library for deploying AI agents via <strong>HTTP</strong>, <strong>A2A</strong>, and <strong>MCP</strong> &mdash; with built-in observability, prompt management, evaluation, and agent discovery through <strong>KiboStudio</strong>.</p>
+            <div class="hero-actions">
+                <a href="#get-started" class="btn btn-primary">Get Started</a>
+                <a href="https://github.com/pywisecloud/kiboserve" target="_blank" class="btn btn-outline">View on GitHub</a>
+            </div>
+            <div class="hero-install">
+                <code>pip install kiboup[all]</code>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('pip install kiboup[all]')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Protocol Cards -->
+    <section class="section" id="protocols">
+        <div class="container">
+            <div class="section-header">
+                <h2>Three Protocols, One API</h2>
+                <p>Choose the right protocol for your use case. All share authentication, logging, and Studio integration.</p>
+            </div>
+            <div class="grid-3">
+                <div class="card card-protocol">
+                    <div class="card-icon card-icon-http">HTTP</div>
+                    <h3>KiboAgentApp</h3>
+                    <p>Standard REST API with streaming (SSE), WebSocket, task tracking, and health checks. Works with any frontend.</p>
+                    <div class="card-tags">
+                        <span>Web Apps</span><span>REST APIs</span><span>Microservices</span>
+                    </div>
+                    <div class="card-endpoints">
+                        <code>POST /invocations</code>
+                        <code>GET /ping</code>
+                        <code>WS /ws</code>
+                    </div>
+                </div>
+                <div class="card card-protocol">
+                    <div class="card-icon card-icon-mcp">MCP</div>
+                    <h3>KiboAgentMcp</h3>
+                    <p>Expose agent capabilities as discoverable tools via the Model Context Protocol. Compatible with MCP Inspector and IDEs.</p>
+                    <div class="card-tags">
+                        <span>IDE Integrations</span><span>Tool Agents</span><span>Plugins</span>
+                    </div>
+                    <div class="card-endpoints">
+                        <code>@app.tool()</code>
+                        <code>@app.resource()</code>
+                        <code>@app.prompt()</code>
+                    </div>
+                </div>
+                <div class="card card-protocol">
+                    <div class="card-icon card-icon-a2a">A2A</div>
+                    <h3>KiboAgentA2A</h3>
+                    <p>Google's Agent-to-Agent protocol with auto-generated Agent Cards, skill-based routing, and task lifecycle.</p>
+                    <div class="card-tags">
+                        <span>Multi-Agent</span><span>Agent Discovery</span><span>Cross-Org</span>
+                    </div>
+                    <div class="card-endpoints">
+                        <code>/.well-known/agent.json</code>
+                        <code>@app.executor</code>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- KiboStudio -->
+    <section class="section section-dark" id="studio">
+        <div class="container">
+            <div class="section-header">
+                <div class="hero-badge">Built-in Developer Console</div>
+                <h2>KiboStudio</h2>
+                <p>Full observability, prompt management, evaluation, and agent discovery in a single web interface.</p>
+            </div>
+
+            <!-- Video -->
+            <div class="video-container">
+                <video autoplay loop muted playsinline class="studio-video">
+                    <source src="demo.webm" type="video/webm">
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+
+            <!-- Studio Features Grid -->
+            <div class="grid-3 studio-features">
+                <div class="card card-feature">
+                    <div class="feature-icon">📡</div>
+                    <h3>Agent Discovery</h3>
+                    <p>Service registry where agents register, send heartbeats, and discover each other at runtime. Monitor health, uptime, memory, and capabilities from the Dashboard.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">📊</div>
+                    <h3>Traces & Observability</h3>
+                    <p>Automatic trace reporting with full span hierarchy: invocation, agent_run, llm_call, tool_call, retrieval. View input/output data, LLM token usage, duration, and errors.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">🔀</div>
+                    <h3>Graph Visualization</h3>
+                    <p>ADK-style visual graph rendering of trace span hierarchies. Agent nodes as green ellipses, tool/LLM nodes as boxes, with bezier curve edges and arrowheads.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">💬</div>
+                    <h3>Chat Interface</h3>
+                    <p>Built-in chat to test any registered agent directly from the browser. Full markdown rendering, message history, and real-time responses.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">🚩</div>
+                    <h3>Feature Flags & Params</h3>
+                    <p>Control agent behavior at runtime without redeploying. Toggle capabilities on/off with feature flags or change configuration via dynamic parameters. Global and per-agent scopes.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">📝</div>
+                    <h3>Prompt Management</h3>
+                    <p>Version-controlled prompt templates with variable extraction, active version selection, and model configuration. Fetch prompts at runtime via the SDK.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">🧪</div>
+                    <h3>Evaluation (LLM-as-Judge)</h3>
+                    <p>Automated quality evaluation using GPT-4o-mini. Scores traces on answer relevancy, coherence, completeness, and harmfulness (0.0-1.0).</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">🔌</div>
+                    <h3>StudioClient SDK</h3>
+                    <p>Full async Python SDK for agents. Auto-registration, heartbeats, flag/param caching (30s TTL), and inline integration with KiboAgentClient and KiboMcpClient.</p>
+                </div>
+                <div class="card card-feature">
+                    <div class="feature-icon">🗄️</div>
+                    <h3>SQLite Backend</h3>
+                    <p>Zero-config persistence with SQLite WAL mode. No external databases required. Just point to a file path and go.</p>
+                </div>
+            </div>
+
+            <!-- Studio Quick Start -->
+            <div class="code-section">
+                <h3>Launch KiboStudio in 3 lines</h3>
+                <pre class="code-block"><code><span class="kw">from</span> kiboup.studio <span class="kw">import</span> KiboStudio
+
+studio = KiboStudio(db_path=<span class="str">"kibostudio.db"</span>, debug=<span class="val">True</span>)
+studio.run(host=<span class="str">"0.0.0.0"</span>, port=<span class="val">8000</span>)</code></pre>
+            </div>
+        </div>
+    </section>
+
+    <!-- Examples -->
+    <section class="section" id="examples">
+        <div class="container">
+            <div class="section-header">
+                <h2>Examples</h2>
+                <p>Ready-to-run examples covering every protocol and feature.</p>
+            </div>
+
+            <!-- Example tabs -->
+            <div class="tabs">
+                <button class="tab active" data-tab="http">HTTP Agent</button>
+                <button class="tab" data-tab="stream">Streaming</button>
+                <button class="tab" data-tab="mcp">MCP Tools</button>
+                <button class="tab" data-tab="a2a">A2A Protocol</button>
+                <button class="tab" data-tab="multi">Multi-Agent</button>
+                <button class="tab" data-tab="chainlit">Chainlit UI</button>
+            </div>
+
+            <!-- HTTP -->
+            <div class="tab-content active" id="tab-http">
+                <div class="example-split">
+                    <div class="example-panel">
+                        <div class="example-label">Server</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentApp, LLMUsage
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> START, MessagesState, StateGraph
+
+app = KiboAgentApp(
+    api_keys={<span class="str">"sk-frontend-abc"</span>: <span class="str">"web-app"</span>}
+)
+
+llm = ChatOpenAI(model=<span class="str">"gpt-4o-mini"</span>)
+builder = StateGraph(MessagesState)
+
+<span class="kw">def</span> <span class="fn">chatbot</span>(state):
+    <span class="kw">return</span> {<span class="str">"messages"</span>: [llm.invoke(state[<span class="str">"messages"</span>])]}
+
+builder.add_node(<span class="str">"chatbot"</span>, chatbot)
+builder.add_edge(START, <span class="str">"chatbot"</span>)
+graph = builder.compile()
+
+<span class="dec">@app.entrypoint</span>
+<span class="kw">async def</span> <span class="fn">invoke</span>(payload, context):
+    result = <span class="kw">await</span> graph.ainvoke(
+        {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: payload[<span class="str">"prompt"</span>]}]}
+    )
+    <span class="kw">return</span> {<span class="str">"response"</span>: result[<span class="str">"messages"</span>][-1].content}
+
+app.run(port=<span class="val">8080</span>)</code></pre>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-label">Client</div>
+                        <pre class="code-block"><code><span class="kw">import</span> asyncio
+<span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentClient
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="kw">async with</span> KiboAgentClient(
+        base_url=<span class="str">"http://127.0.0.1:8080"</span>,
+        api_key=<span class="str">"sk-frontend-abc"</span>,
+    ) <span class="kw">as</span> client:
+        health = <span class="kw">await</span> client.ping()
+        result = <span class="kw">await</span> client.invoke(
+            {<span class="str">"prompt"</span>: <span class="str">"What is AI?"</span>}
+        )
+        <span class="fn">print</span>(result[<span class="str">"response"</span>])
+
+asyncio.run(main())</code></pre>
+                        <div class="example-label" style="margin-top:20px">cURL</div>
+                        <pre class="code-block"><code>curl -X POST http://127.0.0.1:8080/invocations \
+  -H "Content-Type: application/json" \
+  -H "X-API-Key: sk-frontend-abc" \
+  -d '{"prompt": "What is AI?"}'</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Streaming -->
+            <div class="tab-content" id="tab-stream">
+                <div class="example-split">
+                    <div class="example-panel">
+                        <div class="example-label">Streaming Server (SSE)</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentApp
+<span class="kw">from</span> langchain_openai <span class="kw">import</span> ChatOpenAI
+<span class="kw">from</span> langgraph.graph <span class="kw">import</span> START, MessagesState, StateGraph
+
+app = KiboAgentApp(api_keys={<span class="str">"sk-chat-abc"</span>: <span class="str">"chat"</span>})
+llm = ChatOpenAI(model=<span class="str">"gpt-4o-mini"</span>, streaming=<span class="val">True</span>)
+
+builder = StateGraph(MessagesState)
+<span class="kw">def</span> <span class="fn">chatbot</span>(state):
+    <span class="kw">return</span> {<span class="str">"messages"</span>: [llm.invoke(state[<span class="str">"messages"</span>])]}
+builder.add_node(<span class="str">"chatbot"</span>, chatbot)
+builder.add_edge(START, <span class="str">"chatbot"</span>)
+graph = builder.compile()
+
+<span class="dec">@app.entrypoint</span>
+<span class="kw">async def</span> <span class="fn">invoke</span>(payload, context):
+    messages = payload.get(<span class="str">"messages"</span>,
+        [{<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: payload[<span class="str">"prompt"</span>]}])
+
+    <span class="kw">async def</span> <span class="fn">token_stream</span>():
+        <span class="kw">async for</span> event <span class="kw">in</span> graph.astream_events(
+            {<span class="str">"messages"</span>: messages}, version=<span class="str">"v2"</span>
+        ):
+            <span class="kw">if</span> event.get(<span class="str">"event"</span>) == <span class="str">"on_chat_model_stream"</span>:
+                content = event[<span class="str">"data"</span>][<span class="str">"chunk"</span>].content
+                <span class="kw">if</span> content:
+                    <span class="kw">yield</span> {<span class="str">"token"</span>: content}
+        <span class="kw">yield</span> {<span class="str">"done"</span>: <span class="val">True</span>}
+
+    <span class="kw">return</span> token_stream()
+
+app.run(port=<span class="val">8080</span>)</code></pre>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-label">Streaming Client</div>
+                        <pre class="code-block"><code><span class="kw">import</span> asyncio, sys
+<span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentClient
+
+<span class="kw">async def</span> <span class="fn">chat_loop</span>():
+    <span class="kw">async with</span> KiboAgentClient(
+        <span class="str">"http://localhost:8080"</span>,
+        api_key=<span class="str">"sk-chat-abc"</span>
+    ) <span class="kw">as</span> client:
+        <span class="kw">while</span> <span class="val">True</span>:
+            user_input = <span class="fn">input</span>(<span class="str">"You: "</span>)
+            sys.stdout.write(<span class="str">"AI: "</span>)
+
+            <span class="kw">async for</span> chunk <span class="kw">in</span> client.stream(
+                {<span class="str">"prompt"</span>: user_input}
+            ):
+                token = chunk.get(<span class="str">"token"</span>)
+                <span class="kw">if</span> token:
+                    sys.stdout.write(token)
+                    sys.stdout.flush()
+            <span class="fn">print</span>(<span class="str">"\n"</span>)
+
+asyncio.run(chat_loop())</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- MCP -->
+            <div class="tab-content" id="tab-mcp">
+                <div class="example-split">
+                    <div class="example-panel">
+                        <div class="example-label">MCP Server</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentMcp
+
+app = KiboAgentMcp(
+    name=<span class="str">"LangGraph MCP Server"</span>,
+    api_keys={<span class="str">"sk-mcp-abc"</span>: <span class="str">"web-app"</span>},
+)
+
+<span class="dec">@app.tool()</span>
+<span class="kw">async def</span> <span class="fn">ask</span>(question: str) -> str:
+    <span class="str">"""Ask a question to GPT-4o-mini."""</span>
+    result = <span class="kw">await</span> graph.ainvoke(
+        {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                      <span class="str">"content"</span>: question}]}
+    )
+    <span class="kw">return</span> result[<span class="str">"messages"</span>][-1].content
+
+<span class="dec">@app.tool()</span>
+<span class="kw">def</span> <span class="fn">summarize</span>(text: str) -> str:
+    <span class="str">"""Summarize text using GPT-4o-mini."""</span>
+    result = graph.invoke(
+        {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>,
+         <span class="str">"content"</span>: f<span class="str">"Summarize:\n{text}"</span>}]}
+    )
+    <span class="kw">return</span> result[<span class="str">"messages"</span>][-1].content
+
+app.run(transport=<span class="str">"sse"</span>)</code></pre>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-label">MCP Client</div>
+                        <pre class="code-block"><code><span class="kw">import</span> asyncio
+<span class="kw">from</span> kiboup <span class="kw">import</span> KiboMcpClient
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="kw">async with</span> KiboMcpClient(
+        <span class="str">"http://localhost:8000/sse"</span>,
+        api_key=<span class="str">"sk-mcp-abc"</span>
+    ) <span class="kw">as</span> client:
+        tools = <span class="kw">await</span> client.list_tools()
+        <span class="fn">print</span>(f<span class="str">"Tools: {tools}"</span>)
+
+        result = <span class="kw">await</span> client.call_tool(
+            <span class="str">"ask"</span>,
+            {<span class="str">"question"</span>: <span class="str">"What is AI?"</span>}
+        )
+        <span class="fn">print</span>(result)
+
+asyncio.run(main())</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- A2A -->
+            <div class="tab-content" id="tab-a2a">
+                <div class="example-split">
+                    <div class="example-panel">
+                        <div class="example-label">A2A Server</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup.a2a.server <span class="kw">import</span> (
+    AgentExecutor, AgentSkill,
+    KiboAgentA2A, TaskUpdater
+)
+
+app = KiboAgentA2A(
+    name=<span class="str">"Chat Agent"</span>,
+    description=<span class="str">"GPT-4o-mini via LangGraph"</span>,
+    api_keys={<span class="str">"sk-a2a-xyz"</span>: <span class="str">"client"</span>},
+    skills=[AgentSkill(
+        id=<span class="str">"chat"</span>, name=<span class="str">"Chat"</span>,
+        description=<span class="str">"Answer questions"</span>,
+        tags=[<span class="str">"chat"</span>, <span class="str">"qa"</span>],
+        input_modes=[<span class="str">"text/plain"</span>],
+        output_modes=[<span class="str">"text/plain"</span>],
+    )],
+)
+
+<span class="dec">@app.executor</span>
+<span class="kw">class</span> <span class="fn">ChatAgent</span>(AgentExecutor):
+    <span class="kw">async def</span> <span class="fn">execute</span>(self, ctx, queue):
+        <span class="kw">from</span> a2a.utils <span class="kw">import</span> new_agent_text_message
+        user_input = ctx.get_user_input()
+        result = <span class="kw">await</span> graph.ainvoke(
+            {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                          <span class="str">"content"</span>: user_input}]}
+        )
+        <span class="kw">await</span> queue.enqueue_event(
+            new_agent_text_message(
+                result[<span class="str">"messages"</span>][-1].content
+            )
+        )
+
+    <span class="kw">async def</span> <span class="fn">cancel</span>(self, ctx, queue):
+        updater = TaskUpdater(queue, ctx.task_id, ctx.context_id)
+        <span class="kw">await</span> updater.cancel()
+
+app.run()</code></pre>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-label">A2A Client</div>
+                        <pre class="code-block"><code><span class="kw">import</span> asyncio
+<span class="kw">from</span> kiboup <span class="kw">import</span> KiboA2AClient
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="kw">async with</span> KiboA2AClient(
+        <span class="str">"http://localhost:8000"</span>,
+        api_key=<span class="str">"sk-a2a-xyz"</span>
+    ) <span class="kw">as</span> client:
+        card = client.agent_card
+        <span class="fn">print</span>(f<span class="str">"Agent: {card.name}"</span>)
+        <span class="fn">print</span>(f<span class="str">"Skills: {[s.name for s in card.skills]}"</span>)
+
+        response = <span class="kw">await</span> client.send(
+            <span class="str">"What is the capital of France?"</span>
+        )
+        <span class="fn">print</span>(response)
+
+asyncio.run(main())</code></pre>
+                        <div class="example-label" style="margin-top:20px">Agent Card</div>
+                        <pre class="code-block"><code><span class="cmt">// GET /.well-known/agent.json</span>
+{
+  <span class="str">"name"</span>: <span class="str">"Chat Agent"</span>,
+  <span class="str">"description"</span>: <span class="str">"GPT-4o-mini via LangGraph"</span>,
+  <span class="str">"skills"</span>: [{
+    <span class="str">"id"</span>: <span class="str">"chat"</span>,
+    <span class="str">"name"</span>: <span class="str">"Chat"</span>,
+    <span class="str">"tags"</span>: [<span class="str">"chat"</span>, <span class="str">"qa"</span>]
+  }]
+}</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Multi-Agent -->
+            <div class="tab-content" id="tab-multi">
+                <div class="example-split">
+                    <div class="example-panel">
+                        <div class="example-label">Researcher Agent</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentApp
+<span class="kw">from</span> kiboup.studio <span class="kw">import</span> StudioClient
+
+app = KiboAgentApp()
+studio = StudioClient(
+    studio_url=<span class="str">"http://127.0.0.1:8000"</span>,
+    agent_id=<span class="str">"researcher"</span>,
+    agent_name=<span class="str">"researcher"</span>,
+    agent_endpoint=<span class="str">"http://127.0.0.1:8081"</span>,
+    capabilities=[<span class="str">"research"</span>, <span class="str">"delegate"</span>],
+)
+app.attach_studio(studio)
+
+<span class="dec">@app.entrypoint</span>
+<span class="kw">async def</span> <span class="fn">invoke</span>(payload, context):
+    research = <span class="kw">await</span> do_research(payload[<span class="str">"prompt"</span>])
+
+    <span class="cmt"># Feature flag: delegate to writer?</span>
+    <span class="kw">if await</span> studio.is_flag_enabled(<span class="str">"delegate_to_writer"</span>):
+        <span class="cmt"># Discover writer agent via Studio</span>
+        agents = <span class="kw">await</span> studio.list_agents()
+        writer = next(
+            (a <span class="kw">for</span> a <span class="kw">in</span> agents
+             <span class="kw">if</span> a[<span class="str">"agent_id"</span>] == <span class="str">"writer"</span>), <span class="val">None</span>
+        )
+        <span class="kw">if</span> writer:
+            style = <span class="kw">await</span> studio.get_param(
+                <span class="str">"writer_style"</span>, default=<span class="str">"markdown"</span>
+            )
+            <span class="cmt"># Delegate to writer endpoint</span>
+            result = <span class="kw">await</span> call_writer(
+                writer[<span class="str">"endpoint"</span>], research, style
+            )
+            <span class="kw">return</span> {<span class="str">"response"</span>: result, <span class="str">"delegated"</span>: <span class="val">True</span>}
+
+    <span class="kw">return</span> {<span class="str">"response"</span>: research}
+
+app.run(port=<span class="val">8081</span>)</code></pre>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-label">Writer Agent</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentApp
+<span class="kw">from</span> kiboup.studio <span class="kw">import</span> StudioClient
+
+app = KiboAgentApp()
+studio = StudioClient(
+    studio_url=<span class="str">"http://127.0.0.1:8000"</span>,
+    agent_id=<span class="str">"writer"</span>,
+    agent_name=<span class="str">"writer"</span>,
+    agent_endpoint=<span class="str">"http://127.0.0.1:8082"</span>,
+    capabilities=[<span class="str">"writing"</span>, <span class="str">"formatting"</span>],
+)
+app.attach_studio(studio)
+
+<span class="dec">@app.entrypoint</span>
+<span class="kw">async def</span> <span class="fn">invoke</span>(payload, context):
+    prompt = payload.get(<span class="str">"prompt"</span>, <span class="str">""</span>)
+    research = payload.get(<span class="str">"research"</span>, <span class="str">""</span>)
+    style = payload.get(<span class="str">"style"</span>, <span class="str">"markdown"</span>)
+
+    content = (
+        f<span class="str">"Topic: {prompt}\n"</span>
+        f<span class="str">"Research:\n{research}\n"</span>
+        f<span class="str">"Format in {style} style."</span>
+    )
+
+    result = <span class="kw">await</span> graph.ainvoke(
+        {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>,
+                      <span class="str">"content"</span>: content}]}
+    )
+    <span class="kw">return</span> {
+        <span class="str">"response"</span>: result[<span class="str">"messages"</span>][-1].content,
+        <span class="str">"agent"</span>: <span class="str">"writer"</span>,
+        <span class="str">"style"</span>: style,
+    }
+
+app.run(port=<span class="val">8082</span>)</code></pre>
+                        <div class="example-label" style="margin-top:20px">Run It</div>
+                        <pre class="code-block"><code><span class="cmt"># Terminal 1: KiboStudio</span>
+uv run python examples/studio_example.py
+
+<span class="cmt"># Terminal 2: Researcher</span>
+OPENAI_API_KEY=sk-... uv run python \
+  examples/multi_agent_example.py --agent researcher
+
+<span class="cmt"># Terminal 3: Writer</span>
+OPENAI_API_KEY=sk-... uv run python \
+  examples/multi_agent_example.py --agent writer</code></pre>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chainlit -->
+            <div class="tab-content" id="tab-chainlit">
+                <div class="example-split">
+                    <div class="example-panel example-panel-full">
+                        <div class="example-label">Chainlit Chat UI with Streaming</div>
+                        <pre class="code-block"><code><span class="kw">import</span> chainlit <span class="kw">as</span> cl
+<span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentClient
+
+SERVER_URL = <span class="str">"http://localhost:8080"</span>
+API_KEY = <span class="str">"sk-chat-abc"</span>
+
+<span class="dec">@cl.on_chat_start</span>
+<span class="kw">async def</span> <span class="fn">on_start</span>():
+    cl.user_session.set(<span class="str">"history"</span>, [])
+
+<span class="dec">@cl.on_message</span>
+<span class="kw">async def</span> <span class="fn">on_message</span>(message: cl.Message):
+    history = cl.user_session.get(<span class="str">"history"</span>, [])
+    history.append({<span class="str">"role"</span>: <span class="str">"user"</span>, <span class="str">"content"</span>: message.content})
+
+    response = cl.Message(content=<span class="str">""</span>)
+    <span class="kw">await</span> response.send()
+
+    full_response = <span class="str">""</span>
+    <span class="kw">async with</span> KiboAgentClient(SERVER_URL, api_key=API_KEY) <span class="kw">as</span> client:
+        <span class="kw">async for</span> chunk <span class="kw">in</span> client.stream({
+            <span class="str">"prompt"</span>: message.content,
+            <span class="str">"messages"</span>: history,
+        }):
+            token = chunk.get(<span class="str">"token"</span>)
+            <span class="kw">if</span> token:
+                full_response += token
+                <span class="kw">await</span> response.stream_token(token)
+
+    <span class="kw">await</span> response.update()
+    history.append({<span class="str">"role"</span>: <span class="str">"assistant"</span>, <span class="str">"content"</span>: full_response})</code></pre>
+                        <div class="example-label" style="margin-top:20px">Run It</div>
+                        <pre class="code-block"><code><span class="cmt"># 1. Start streaming server</span>
+OPENAI_API_KEY=sk-... uv run python examples/stream_server_example.py
+
+<span class="cmt"># 2. Start Chainlit</span>
+uv run chainlit run examples/chainlit_example.py</code></pre>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Get Started -->
+    <section class="section section-dark" id="get-started">
+        <div class="container">
+            <div class="section-header">
+                <h2>Get Started</h2>
+                <p>Install KiboUP and start deploying agents in minutes.</p>
+            </div>
+            <div class="grid-2">
+                <div class="card card-feature">
+                    <h3>1. Install</h3>
+                    <pre class="code-block"><code><span class="cmt"># Core (HTTP only)</span>
+pip install kiboup
+
+<span class="cmt"># With all protocols + Studio</span>
+pip install kiboup[all]
+
+<span class="cmt"># Or with uv</span>
+uv add kiboup[all]</code></pre>
+                </div>
+                <div class="card card-feature">
+                    <h3>2. Create an Agent</h3>
+                    <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentApp
+
+app = KiboAgentApp()
+
+<span class="dec">@app.entrypoint</span>
+<span class="kw">async def</span> <span class="fn">invoke</span>(payload, context):
+    <span class="kw">return</span> {<span class="str">"response"</span>: <span class="str">"Hello!"</span>}
+
+app.run(port=<span class="val">8080</span>)</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-inner">
+                <div class="footer-logo">Kibo<span>UP</span></div>
+                <p>Framework-agnostic AI agent deployment library.</p>
+                <div class="footer-links">
+                    <a href="https://github.com/pywisecloud/kiboserve" target="_blank">GitHub</a>
+                    <a href="https://pypi.org/project/kiboup/" target="_blank">PyPI</a>
+                    <a href="#protocols">Protocols</a>
+                    <a href="#studio">Studio</a>
+                    <a href="#examples">Examples</a>
+                </div>
+                <p class="footer-copy">MIT License</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Tab switching
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+            });
+        });
+
+        // Sticky nav
+        const nav = document.getElementById('nav');
+        window.addEventListener('scroll', () => {
+            nav.classList.toggle('scrolled', window.scrollY > 50);
+        });
+
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(a => {
+            a.addEventListener('click', e => {
+                e.preventDefault();
+                const target = document.querySelector(a.getAttribute('href'));
+                if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
+        });
+    </script>
+</body>
+</html>
