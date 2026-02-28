@@ -1,0 +1,42 @@
+name: Publish to TestPyPI
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  publish-testpypi:
+    name: Publish to TestPyPI
+    runs-on: ubuntu-latest
+    environment: kibo
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Install build tools
+        run: pip install build twine
+
+      - name: Generate dev version
+        run: |
+          BASE_VERSION=$(grep 'version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          DEV_VERSION="${BASE_VERSION}.dev${GITHUB_RUN_NUMBER}"
+          sed -i "s/version = \"${BASE_VERSION}\"/version = \"${DEV_VERSION}\"/" pyproject.toml
+          echo "Publishing version: ${DEV_VERSION}"
+
+      - name: Build package
+        run: python -m build
+
+      - name: Publish to TestPyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.TESTPYPI }}
+        run: twine upload --repository-url https://test.pypi.org/legacy/ dist/*
