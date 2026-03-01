@@ -8,6 +8,11 @@ on:
 jobs:
   publish-pypi:
     name: Publish to PyPI
+    if: |
+      github.event_name == 'workflow_dispatch' ||
+      contains(github.event.head_commit.message, 'feature/') ||
+      contains(github.event.head_commit.message, 'hotfix/') ||
+      contains(github.event.head_commit.message, 'bugfix/')
     runs-on: ubuntu-latest
     environment: kibo
     permissions:
