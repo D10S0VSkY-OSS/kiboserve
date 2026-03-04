@@ -1,6 +1,6 @@
 [project]
 name = "kiboup"
-dynamic = ["version"]
+version = "0.2.0"
 description = "Framework-agnostic library for deploying AI agents via HTTP, A2A, and MCP"
 readme = "README.md"
 requires-python = ">=3.13"
@@ -23,11 +23,5 @@ examples = [
 ]
 
 [build-system]
-requires = ["hatchling", "hatch-vcs"]
+requires = ["hatchling"]
 build-backend = "hatchling.build"
-
-[tool.hatch.version]
-source = "vcs"
-
-[tool.hatch.build.hooks.vcs]
-version-file = "kiboup/_version.py"

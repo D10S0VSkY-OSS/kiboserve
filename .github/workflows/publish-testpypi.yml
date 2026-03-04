@@ -20,8 +20,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -30,6 +28,13 @@ jobs:
 
       - name: Install build tools
         run: pip install build twine
+
+      - name: Generate unique dev version
+        run: |
+          BASE_VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          DEV_VERSION="${BASE_VERSION}.dev${GITHUB_RUN_ID}"
+          sed -i "s/version = \"${BASE_VERSION}\"/version = \"${DEV_VERSION}\"/" pyproject.toml
+          echo "Publishing version: ${DEV_VERSION}"
 
       - name: Build package
         run: python -m build
