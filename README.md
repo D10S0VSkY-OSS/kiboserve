@@ -59,16 +59,16 @@ All three protocols share:
 uv add kiboup
 
 # With MCP support
-uv add kiboup[mcp]
+uv add "kiboup[mcp]"
 
 # With A2A support
-uv add kiboup[a2a]
+uv add "kiboup[a2a]"
 
 # With KiboStudio (observability, prompts, eval, discovery)
-uv add kiboup[studio]
+uv add "kiboup[studio]"
 
 # Everything
-uv add kiboup[all]
+uv add "kiboup[all]"
 ```
 
 ---
