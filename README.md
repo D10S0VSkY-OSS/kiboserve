@@ -19,6 +19,7 @@
   - [MCP Server + Client](#mcp-server--client)
   - [A2A Server + Client](#a2a-server--client)
   - [Chainlit Chat UI](#chainlit-chat-ui)
+  - [mTLS (Mutual TLS)](#mtls-mutual-tls)
 - [KiboStudio](#kibostudio)
   - [Getting Started](#getting-started)
   - [Agent Discovery & Multi-Agent Collaboration](#agent-discovery--multi-agent-collaboration)
@@ -468,6 +469,66 @@ uv run chainlit run examples/chainlit_example.py
 
 ---
 
+### mTLS (Mutual TLS)
+
+KiboUP supports **automatic mutual TLS** for all protocols. Certificates are auto-generated on first run and renewed automatically before expiry.
+
+**Server:**
+
+```python
+from kiboup import KiboAgentApp
+
+app = KiboAgentApp()
+
+@app.entrypoint
+async def invoke(payload, context):
+    return {"response": "Hello from mTLS!"}
+
+app.run(host="0.0.0.0", port=8443, mtls=True)
+```
+
+**Client:**
+
+```python
+import asyncio
+from kiboup import KiboAgentClient
+
+async def main():
+    async with KiboAgentClient(
+        base_url="https://localhost:8443",
+        mtls=True,
+    ) as client:
+        result = await client.invoke({"prompt": "Hello!"})
+        print(result["response"])
+
+asyncio.run(main())
+```
+
+**Custom certificate directory** via environment variable:
+
+```bash
+KIBO_CERTS_DIR=/path/to/certs uv run python my_server.py
+```
+
+**Custom configuration** via `MTLSConfig`:
+
+```python
+from kiboup import MTLSConfig
+
+config = MTLSConfig(
+    certs_dir="/custom/certs",
+    hostname="myagent.example.com",
+    validity_days=365,
+    renew_before_days=30,
+)
+
+app.run(port=8443, mtls=config)
+```
+
+> Certificates are stored in `~/.kiboserve/certs/` by default. The CA certificate is valid for 10 years; server and client certificates for 1 year with auto-renewal at 30 days before expiry.
+
+---
+
 ## KiboStudio
 
 KiboStudio is the built-in **developer console** for observability, prompt management, evaluation, and agent discovery. It runs as a standalone web server with a SQLite backend.
@@ -651,6 +712,7 @@ async with KiboAgentClient(
 | A2A Client | `examples/a2a_client_example.py` | A2A client reading agent card and sending messages |
 | Chainlit UI | `examples/chainlit_example.py` | Web chat interface with streaming |
 | KiboStudio | `examples/studio_example.py` | Launch the developer console |
+| mTLS | `examples/mtls_example.py` | mTLS server + client with auto-generated certificates |
 | Multi-Agent | `examples/multi_agent_example.py` | Researcher + Writer agents with discovery, flags, and params |
 
 Run any example:
