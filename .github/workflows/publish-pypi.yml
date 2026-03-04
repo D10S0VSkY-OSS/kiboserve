@@ -2,17 +2,13 @@ name: Publish to PyPI
 
 on:
   push:
-    branches: [main]
+    tags:
+      - "v*"
   workflow_dispatch:
 
 jobs:
   publish-pypi:
     name: Publish to PyPI
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, 'feature/') ||
-      contains(github.event.head_commit.message, 'hotfix/') ||
-      contains(github.event.head_commit.message, 'bugfix/')
     runs-on: ubuntu-latest
     environment: kibo
     permissions:
@@ -21,6 +17,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Python
         uses: actions/setup-python@v5
