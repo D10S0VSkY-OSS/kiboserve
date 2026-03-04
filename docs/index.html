@@ -39,8 +39,8 @@
                 <a href="https://github.com/D10S0VSkY-OSS/kiboserve" target="_blank" class="btn btn-outline">View on GitHub</a>
             </div>
             <div class="hero-install">
-                <code>pip install kiboup[all]</code>
-                <button class="copy-btn" onclick="navigator.clipboard.writeText('pip install kiboup[all]')">
+                <code>uv add kiboup[all]</code>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('uv add kiboup[all]')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 </button>
             </div>
@@ -659,12 +659,9 @@ uv run chainlit run examples/chainlit_example.py</code></pre>
                 <div class="card card-feature">
                     <h3>1. Install</h3>
                     <pre class="code-block"><code><span class="cmt"># Core (HTTP only)</span>
-pip install kiboup
+uv add kiboup
 
 <span class="cmt"># With all protocols + Studio</span>
-pip install kiboup[all]
-
-<span class="cmt"># Or with uv</span>
 uv add kiboup[all]</code></pre>
                 </div>
                 <div class="card card-feature">

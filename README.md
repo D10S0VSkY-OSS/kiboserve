@@ -56,22 +56,20 @@ All three protocols share:
 
 ```bash
 # Core (HTTP only)
-pip install kiboup
+uv add kiboup
 
 # With MCP support
-pip install kiboup[mcp]
+uv add kiboup[mcp]
 
 # With A2A support
-pip install kiboup[a2a]
+uv add kiboup[a2a]
 
 # With KiboStudio (observability, prompts, eval, discovery)
-pip install kiboup[studio]
+uv add kiboup[studio]
 
 # Everything
-pip install kiboup[all]
+uv add kiboup[all]
 ```
-
-> Recommended: use `uv` for faster installs — `uv add kiboup[all]`
 
 ---
 
