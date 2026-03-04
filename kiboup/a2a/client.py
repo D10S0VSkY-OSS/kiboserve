@@ -4,6 +4,7 @@ from typing import Any, Dict, Optional
 
 import httpx
 
+
 from a2a.client import (
     ClientConfig,
     ClientFactory,
@@ -37,12 +38,14 @@ class KiboA2AClient:
         bearer_token: Optional[str] = None,
         api_key: Optional[str] = None,
         client_config: Optional[ClientConfig] = None,
+        mtls=False,
     ):
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._bearer_token = bearer_token
         self._api_key = api_key
         self._client_config = client_config
+        self._mtls = mtls
         self._client = None
         self._card = None
         self._httpx_client: Optional[httpx.AsyncClient] = None
@@ -58,11 +61,20 @@ class KiboA2AClient:
         if self._bearer_token:
             headers["Authorization"] = f"Bearer {self._bearer_token}"
 
+        httpx_kwargs: Dict[str, Any] = {}
         if headers:
-            self._httpx_client = httpx.AsyncClient(
-                headers=headers,
-                timeout=self._timeout,
-            )
+            httpx_kwargs["headers"] = headers
+        httpx_kwargs["timeout"] = self._timeout
+
+        from kiboup.shared.tls import _resolve_mtls
+
+        cert_manager = _resolve_mtls(self._mtls)
+        if cert_manager is not None:
+            ssl_kwargs = cert_manager.client_ssl_kwargs()
+            httpx_kwargs.update(ssl_kwargs)
+
+        if httpx_kwargs:
+            self._httpx_client = httpx.AsyncClient(**httpx_kwargs)
             config.httpx_client = self._httpx_client
 
         return config

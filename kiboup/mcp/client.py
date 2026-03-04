@@ -59,6 +59,7 @@ class KiboMcpClient:
         auth: Union[str, httpx.Auth, None] = None,
         api_key: Optional[str] = None,
         *,
+        mtls=False,
         studio=None,
         studio_url: Optional[str] = None,
         agent_id: Optional[str] = None,
@@ -69,6 +70,7 @@ class KiboMcpClient:
             self._auth: Union[str, httpx.Auth, None] = _ApiKeyAuth(api_key)
         else:
             self._auth = auth
+        self._mtls = mtls
         self._client: Optional[FastMCPClient] = None
         self.logger = create_logger("kiboup.mcp_client")
 
@@ -93,6 +95,14 @@ class KiboMcpClient:
         kwargs: Dict[str, Any] = {}
         if self._auth is not None:
             kwargs["auth"] = self._auth
+
+        from kiboup.shared.tls import _resolve_mtls
+
+        cert_manager = _resolve_mtls(self._mtls)
+        if cert_manager is not None:
+            ssl_kwargs = cert_manager.client_ssl_kwargs()
+            kwargs["httpx_client"] = httpx.AsyncClient(**ssl_kwargs)
+
         self._client = FastMCPClient(self._url, **kwargs)
         await self._client.__aenter__()
         if self._studio is not None:

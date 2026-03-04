@@ -7,6 +7,7 @@ Supports three connection modes (server + client):
 """
 
 from kiboup.shared.entities import HealthStatus, LLMUsage, RequestContext
+from kiboup.shared.tls import MTLSConfig
 from kiboup.http.server import KiboAgentApp
 from kiboup.http.client import KiboAgentClient
 from kiboup.shared.middleware import ApiKeyMiddleware
@@ -18,6 +19,7 @@ __all__ = [
     "RequestContext",
     "HealthStatus",
     "LLMUsage",
+    "MTLSConfig",
 ]
 
 try:

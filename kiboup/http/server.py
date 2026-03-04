@@ -220,20 +220,30 @@ class KiboAgentApp(Starlette):
 
     # -- Server --
 
-    def run(self, port: int = 8080, host: Optional[str] = None, reload: bool = False, **kwargs):
+    def run(self, port: int = 8080, host: Optional[str] = None, reload: bool = False, mtls=False, **kwargs):
         """Start the server with uvicorn.
 
         Args:
             port: Port to listen on (default: 8080).
             host: Host to bind. Auto-detected if None.
             reload: Enable auto-reload on code changes (default: False).
+            mtls: Enable mutual TLS. Pass ``True`` for auto-generated
+                certificates, or an ``MTLSConfig`` for custom paths.
         """
         import uvicorn
+        from kiboup.shared.tls import _resolve_mtls
 
         if host is None:
             host = detect_host()
 
-        print_banner("HTTP Agent", host, port)
+        cert_manager = _resolve_mtls(mtls)
+        mtls_banner = ""
+        if cert_manager is not None:
+            ssl_kwargs = cert_manager.server_ssl_kwargs()
+            kwargs.update(ssl_kwargs)
+            mtls_banner = str(cert_manager._cfg.certs_dir)
+
+        print_banner("HTTP Agent", host, port, mtls_info=mtls_banner)
 
         workers = kwargs.pop("workers", 1)
         needs_import_string = reload or workers > 1

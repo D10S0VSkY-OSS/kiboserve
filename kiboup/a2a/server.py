@@ -122,20 +122,30 @@ class KiboAgentA2A:
         self._executor_cls = cls
         return cls
 
-    def run(self, host: str = "0.0.0.0", port: int = 8000, reload: bool = False, **kwargs):
+    def run(self, host: str = "0.0.0.0", port: int = 8000, reload: bool = False, mtls=False, **kwargs):
         """Start the A2A server with uvicorn.
 
         Args:
             host: Host to bind (default: 0.0.0.0).
             port: Port to listen on (default: 8000).
             reload: Enable auto-reload on code changes (default: False).
+            mtls: Enable mutual TLS. Pass ``True`` for auto-generated
+                certificates, or an ``MTLSConfig`` for custom paths.
         """
         import uvicorn
+        from kiboup.shared.tls import _resolve_mtls
 
         if self._executor_cls is None:
             raise RuntimeError(
                 "No executor registered. Use @app.executor on an AgentExecutor subclass."
             )
+
+        cert_manager = _resolve_mtls(mtls)
+        mtls_banner = ""
+        if cert_manager is not None:
+            ssl_kwargs = cert_manager.server_ssl_kwargs()
+            kwargs.update(ssl_kwargs)
+            mtls_banner = str(cert_manager._cfg.certs_dir)
 
         url = self._url or f"http://localhost:{port}"
 
@@ -173,7 +183,7 @@ class KiboAgentA2A:
 
         app = starlette_app.build(**build_kwargs)
 
-        print_banner("A2A Agent", host, port)
+        print_banner("A2A Agent", host, port, mtls_info=mtls_banner)
 
         workers = kwargs.pop("workers", 1)
         needs_import_string = reload or workers > 1
