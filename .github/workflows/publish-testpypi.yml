@@ -29,10 +29,10 @@ jobs:
       - name: Install build tools
         run: pip install build twine
 
-      - name: Generate dev version
+      - name: Generate unique dev version
         run: |
-          BASE_VERSION=$(grep 'version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          DEV_VERSION="${BASE_VERSION}.dev${GITHUB_RUN_NUMBER}"
+          BASE_VERSION=$(grep '^version' pyproject.toml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+          DEV_VERSION="${BASE_VERSION}.dev${GITHUB_RUN_ID}"
           sed -i "s/version = \"${BASE_VERSION}\"/version = \"${DEV_VERSION}\"/" pyproject.toml
           echo "Publishing version: ${DEV_VERSION}"
 

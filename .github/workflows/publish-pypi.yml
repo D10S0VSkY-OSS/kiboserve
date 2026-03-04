@@ -2,17 +2,13 @@ name: Publish to PyPI
 
 on:
   push:
-    branches: [main]
+    tags:
+      - "v*"
   workflow_dispatch:
 
 jobs:
   publish-pypi:
     name: Publish to PyPI
-    if: |
-      github.event_name == 'workflow_dispatch' ||
-      contains(github.event.head_commit.message, 'feature/') ||
-      contains(github.event.head_commit.message, 'hotfix/') ||
-      contains(github.event.head_commit.message, 'bugfix/')
     runs-on: ubuntu-latest
     environment: kibo
     permissions:
@@ -29,6 +25,13 @@ jobs:
 
       - name: Install build tools
         run: pip install build twine
+
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          sed -i "s/^version = \".*\"/version = \"${TAG_VERSION}\"/" pyproject.toml
+          echo "Publishing version: ${TAG_VERSION}"
 
       - name: Build package
         run: python -m build
