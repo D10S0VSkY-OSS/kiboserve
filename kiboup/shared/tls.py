@@ -149,6 +149,10 @@ class CertManager:
             )
             .add_extension(san, critical=False)
             .add_extension(
+                x509.BasicConstraints(ca=False, path_length=None),
+                critical=True,
+            )
+            .add_extension(
                 x509.KeyUsage(
                     digital_signature=True, key_encipherment=True,
                     content_commitment=False, key_cert_sign=False,
@@ -179,8 +183,9 @@ class CertManager:
 
     def ensure_client_cert(self, client_name: str = "agent-client") -> Tuple[Path, Path]:
         """Return (client_cert_path, client_key_path)."""
-        cert_path = self._cfg.client_cert or self._cfg.certs_dir / "client.crt"
-        key_path = self._cfg.client_key or self._cfg.certs_dir / "client.key"
+        safe_name = "".join(c if c.isalnum() or c in "-_" else "_" for c in client_name)
+        cert_path = self._cfg.client_cert or self._cfg.certs_dir / f"{safe_name}.crt"
+        key_path = self._cfg.client_key or self._cfg.certs_dir / f"{safe_name}.key"
 
         if cert_path.exists() and key_path.exists():
             if not self._needs_renewal(cert_path):
@@ -203,6 +208,10 @@ class CertManager:
             .not_valid_before(self._utc_now())
             .not_valid_after(
                 self._utc_now() + datetime.timedelta(days=self._cfg.validity_days),
+            )
+            .add_extension(
+                x509.BasicConstraints(ca=False, path_length=None),
+                critical=True,
             )
             .add_extension(
                 x509.KeyUsage(
@@ -297,6 +306,7 @@ class CertManager:
                 serialization.NoEncryption(),
             )
         )
+        path.chmod(0o600)
 
     @staticmethod
     def _build_san(hostname: str) -> x509.SubjectAlternativeName:

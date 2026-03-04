@@ -72,6 +72,7 @@ class KiboMcpClient:
             self._auth = auth
         self._mtls = mtls
         self._client: Optional[FastMCPClient] = None
+        self._external_httpx_client: Optional[httpx.AsyncClient] = None
         self.logger = create_logger("kiboup.mcp_client")
 
         self._studio = studio
@@ -101,7 +102,8 @@ class KiboMcpClient:
         cert_manager = _resolve_mtls(self._mtls)
         if cert_manager is not None:
             ssl_kwargs = cert_manager.client_ssl_kwargs()
-            kwargs["httpx_client"] = httpx.AsyncClient(**ssl_kwargs)
+            self._external_httpx_client = httpx.AsyncClient(**ssl_kwargs)
+            kwargs["httpx_client"] = self._external_httpx_client
 
         self._client = FastMCPClient(self._url, **kwargs)
         await self._client.__aenter__()
@@ -118,6 +120,9 @@ class KiboMcpClient:
         if self._client:
             await self._client.__aexit__(*args)
             self._client = None
+        if self._external_httpx_client is not None:
+            await self._external_httpx_client.aclose()
+            self._external_httpx_client = None
 
     async def list_tools(self) -> List[Dict[str, Any]]:
         """List available tools on the MCP server."""

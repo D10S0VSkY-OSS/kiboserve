@@ -147,7 +147,8 @@ class KiboAgentA2A:
             kwargs.update(ssl_kwargs)
             mtls_banner = str(cert_manager._cfg.certs_dir)
 
-        url = self._url or f"http://localhost:{port}"
+        scheme = "https" if cert_manager is not None else "http"
+        url = self._url or f"{scheme}://localhost:{port}"
 
         card_kwargs: Dict[str, Any] = {
             "name": self._name,
