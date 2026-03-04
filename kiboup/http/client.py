@@ -36,6 +36,7 @@ class KiboAgentClient:
         api_key: Optional[str] = None,
         timeout: float = 120.0,
         *,
+        mtls=False,
         studio=None,
         studio_url: Optional[str] = None,
         agent_id: Optional[str] = None,
@@ -44,6 +45,7 @@ class KiboAgentClient:
         self._base_url = base_url.rstrip("/")
         self._api_key = api_key
         self._timeout = timeout
+        self._mtls = mtls
         self._client: Optional[httpx.AsyncClient] = None
         self.logger = create_logger("kiboup.agent_client")
 
@@ -71,11 +73,19 @@ class KiboAgentClient:
         return headers
 
     async def __aenter__(self):
-        self._client = httpx.AsyncClient(
-            base_url=self._base_url,
-            timeout=self._timeout,
-            headers=self._headers(),
-        )
+        client_kwargs = {
+            "base_url": self._base_url,
+            "timeout": self._timeout,
+            "headers": self._headers(),
+        }
+        from kiboup.shared.tls import _resolve_mtls
+
+        cert_manager = _resolve_mtls(self._mtls)
+        if cert_manager is not None:
+            ssl_kwargs = cert_manager.client_ssl_kwargs()
+            client_kwargs.update(ssl_kwargs)
+
+        self._client = httpx.AsyncClient(**client_kwargs)
         if self._studio is not None:
             await self._studio.__aenter__()
         return self

@@ -39,8 +39,8 @@
                 <a href="https://github.com/D10S0VSkY-OSS/kiboserve" target="_blank" class="btn btn-outline">View on GitHub</a>
             </div>
             <div class="hero-install">
-                <code>pip install kiboup[all]</code>
-                <button class="copy-btn" onclick="navigator.clipboard.writeText('pip install kiboup[all]')">
+                <code>uv add "kiboup[all]"</code>
+                <button class="copy-btn" onclick="navigator.clipboard.writeText('uv add \"kiboup[all]\"')">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
                 </button>
             </div>
@@ -189,6 +189,7 @@ studio.run(host=<span class="str">"0.0.0.0"</span>, port=<span class="val">8000<
                 <button class="tab" data-tab="mcp">MCP Tools</button>
                 <button class="tab" data-tab="a2a">A2A Protocol</button>
                 <button class="tab" data-tab="multi">Multi-Agent</button>
+                <button class="tab" data-tab="mtls">mTLS</button>
                 <button class="tab" data-tab="chainlit">Chainlit UI</button>
             </div>
 
@@ -548,6 +549,57 @@ OPENAI_API_KEY=sk-... uv run python \
                 </div>
             </div>
 
+            <!-- mTLS -->
+            <div class="tab-content" id="tab-mtls">
+                <div class="example-split">
+                    <div class="example-panel">
+                        <div class="example-label">Server</div>
+                        <pre class="code-block"><code><span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentApp
+
+app = KiboAgentApp()
+
+<span class="dec">@app.entrypoint</span>
+<span class="kw">async def</span> <span class="fn">invoke</span>(payload, context):
+    <span class="kw">return</span> {<span class="str">"response"</span>: <span class="str">"Hello from mTLS!"</span>}
+
+<span class="cmt"># Auto-generates CA, server &amp; client certs</span>
+app.run(host=<span class="str">"0.0.0.0"</span>, port=<span class="val">8443</span>, mtls=<span class="val">True</span>)</code></pre>
+                    </div>
+                    <div class="example-panel">
+                        <div class="example-label">Client</div>
+                        <pre class="code-block"><code><span class="kw">import</span> asyncio
+<span class="kw">from</span> kiboup <span class="kw">import</span> KiboAgentClient
+
+<span class="kw">async def</span> <span class="fn">main</span>():
+    <span class="kw">async with</span> KiboAgentClient(
+        base_url=<span class="str">"https://localhost:8443"</span>,
+        mtls=<span class="val">True</span>,
+    ) <span class="kw">as</span> client:
+        result = <span class="kw">await</span> client.invoke({<span class="str">"prompt"</span>: <span class="str">"Hello!"</span>})
+
+asyncio.run(main())</code></pre>
+                    </div>
+                </div>
+                <div class="example-split" style="margin-top: 16px;">
+                    <div class="example-panel example-panel-full">
+                        <div class="example-label">Custom Certs Directory</div>
+                        <pre class="code-block"><code><span class="cmt"># Via environment variable</span>
+KIBO_CERTS_DIR=/path/to/certs uv run python my_server.py
+
+<span class="cmt"># Via MTLSConfig</span>
+<span class="kw">from</span> kiboup <span class="kw">import</span> MTLSConfig
+
+config = MTLSConfig(
+    certs_dir=<span class="str">"/custom/certs"</span>,
+    hostname=<span class="str">"myagent.example.com"</span>,
+    validity_days=<span class="val">365</span>,
+    renew_before_days=<span class="val">30</span>,
+)
+app.run(port=<span class="val">8443</span>, mtls=config)</code></pre>
+                    </div>
+                </div>
+            </div>
+
             <!-- Chainlit -->
             <div class="tab-content" id="tab-chainlit">
                 <div class="example-split">
@@ -607,13 +659,10 @@ uv run chainlit run examples/chainlit_example.py</code></pre>
                 <div class="card card-feature">
                     <h3>1. Install</h3>
                     <pre class="code-block"><code><span class="cmt"># Core (HTTP only)</span>
-pip install kiboup
+uv add kiboup
 
 <span class="cmt"># With all protocols + Studio</span>
-pip install kiboup[all]
-
-<span class="cmt"># Or with uv</span>
-uv add kiboup[all]</code></pre>
+uv add "kiboup[all]"</code></pre>
                 </div>
                 <div class="card card-feature">
                     <h3>2. Create an Agent</h3>

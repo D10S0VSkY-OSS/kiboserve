@@ -94,7 +94,7 @@ def _terminal_width() -> int:
         return 80
 
 
-def print_banner(mode: str, host: str, port: int):
+def print_banner(mode: str, host: str, port: int, mtls_info: str = ""):
     """Print the KiboUp ASCII banner centered on the terminal."""
     is_tty = hasattr(sys.stderr, "isatty") and sys.stderr.isatty()
     w = _BANNER_WIDTH
@@ -128,23 +128,25 @@ def print_banner(mode: str, host: str, port: int):
     cyan = "\033[36m" if is_tty else ""
     reset = "\033[0m" if is_tty else ""
 
-    mode_text = f"{dim}Mode:{reset} {cyan}{mode}{reset}"
-    host_text = f"{dim}Host:{reset} {cyan}{host}:{port}{reset}"
+    info_lines = [
+        ("Mode", mode),
+        ("Host", f"{host}:{port}"),
+    ]
+    if mtls_info:
+        info_lines.append(("mTLS", mtls_info))
 
-    mode_raw = f"Mode: {mode}"
-    host_raw = f"Host: {host}:{port}"
+    for label, value in info_lines:
+        colored_text = f"{dim}{label}:{reset} {cyan}{value}{reset}"
+        raw_text = f"{label}: {value}"
 
-    mode_pad = _center_line(mode_raw, inner)
-    host_pad = _center_line(host_raw, inner)
-
-    if is_tty:
-        mode_padded = _center_line("", (inner - len(mode_raw)) // 2) + mode_text + " " * (inner - len(mode_raw) - (inner - len(mode_raw)) // 2)
-        host_padded = _center_line("", (inner - len(host_raw)) // 2) + host_text + " " * (inner - len(host_raw) - (inner - len(host_raw)) // 2)
-        out(margin + pipe_l + mode_padded + pipe_r + "\n")
-        out(margin + pipe_l + host_padded + pipe_r + "\n")
-    else:
-        out(margin + pipe_l + mode_pad + pipe_r + "\n")
-        out(margin + pipe_l + host_pad + pipe_r + "\n")
+        if is_tty:
+            left_space = (inner - len(raw_text)) // 2
+            right_space = inner - len(raw_text) - left_space
+            padded = " " * left_space + colored_text + " " * right_space
+            out(margin + pipe_l + padded + pipe_r + "\n")
+        else:
+            pad = _center_line(raw_text, inner)
+            out(margin + pipe_l + pad + pipe_r + "\n")
 
     out(margin + empty + "\n")
     out(margin + bot + "\n")

@@ -4,6 +4,7 @@ from kiboup.shared.entities import HealthStatus, LLMUsage, RequestContext
 from kiboup.shared.logger import create_logger
 from kiboup.shared.banner import detect_host, print_banner, resolve_import_string
 from kiboup.shared.middleware import ApiKeyMiddleware
+from kiboup.shared.tls import MTLSConfig, CertManager
 
 __all__ = [
     "HealthStatus",
@@ -14,4 +15,6 @@ __all__ = [
     "print_banner",
     "resolve_import_string",
     "ApiKeyMiddleware",
+    "MTLSConfig",
+    "CertManager",
 ]

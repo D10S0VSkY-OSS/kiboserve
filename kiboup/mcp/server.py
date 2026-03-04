@@ -101,6 +101,7 @@ class KiboAgentMcp:
         port: int = 8000,
         transport: str = "sse",
         reload: bool = False,
+        mtls=False,
         **kwargs,
     ):
         """Start the MCP server.
@@ -110,8 +111,19 @@ class KiboAgentMcp:
             port: Port to listen on (default: 8000).
             transport: MCP transport type (default: sse).
             reload: Enable auto-reload on code changes (default: False).
+            mtls: Enable mutual TLS. Pass ``True`` for auto-generated
+                certificates, or an ``MTLSConfig`` for custom paths.
         """
-        print_banner(f"MCP Server ({transport})", host, port)
+        from kiboup.shared.tls import _resolve_mtls
+
+        cert_manager = _resolve_mtls(mtls)
+        mtls_banner = ""
+        if cert_manager is not None:
+            ssl_kwargs = cert_manager.server_ssl_kwargs()
+            kwargs.update(ssl_kwargs)
+            mtls_banner = str(cert_manager._cfg.certs_dir)
+
+        print_banner(f"MCP Server ({transport})", host, port, mtls_info=mtls_banner)
 
         extra_kwargs: dict = {}
         if self._api_keys:
