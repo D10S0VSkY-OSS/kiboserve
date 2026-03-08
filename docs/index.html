@@ -399,7 +399,7 @@ app = KiboAgentA2A(
 <span class="dec">@app.executor</span>
 <span class="kw">class</span> <span class="fn">ChatAgent</span>(AgentExecutor):
     <span class="kw">async def</span> <span class="fn">execute</span>(self, ctx, queue):
-        <span class="kw">from</span> a2a.utils <span class="kw">import</span> new_agent_text_message
+        <span class="kw">from</span> kiboup.a2a.utils <span class="kw">import</span> new_agent_text_message
         user_input = ctx.get_user_input()
         result = <span class="kw">await</span> graph.ainvoke(
             {<span class="str">"messages"</span>: [{<span class="str">"role"</span>: <span class="str">"user"</span>,

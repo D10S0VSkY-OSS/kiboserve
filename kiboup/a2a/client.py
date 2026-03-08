@@ -4,7 +4,11 @@ from typing import Any, Dict, Optional
 
 import httpx
 
+# --- Re-export all public symbols from a2a-sdk client ---
+# This ensures kiboup.a2a.client is never more limited than the SDK itself.
+from a2a.client import *  # noqa: F401, F403
 
+# Explicit imports used internally by KiboA2AClient
 from a2a.client import (
     ClientConfig,
     ClientFactory,
@@ -13,6 +17,7 @@ from a2a.client import (
 
 from kiboup.shared.logger import create_logger
 
+# KiboA2AClient is always exported; all SDK symbols come via wildcard above
 __all__ = ["KiboA2AClient"]
 
 
