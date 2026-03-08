@@ -385,7 +385,7 @@ app = KiboAgentA2A(
 @app.executor
 class ChatAgent(AgentExecutor):
     async def execute(self, context, event_queue):
-        from a2a.utils import new_agent_text_message
+        from kiboup.a2a.utils import new_agent_text_message
         user_input = context.get_user_input()
         result = await graph.ainvoke(
             {"messages": [{"role": "user", "content": user_input}]}

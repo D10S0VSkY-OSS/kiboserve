@@ -24,7 +24,7 @@ Example:
     @app.executor
     class MyAgent(AgentExecutor):
         async def execute(self, context, event_queue):
-            from a2a.server.utils import new_agent_text_message
+            from kiboup.a2a.utils import new_agent_text_message
             msg = context.get_user_input()
             await event_queue.enqueue_event(new_agent_text_message(f"Hello: {msg}"))
 
@@ -36,6 +36,17 @@ Example:
 
 from typing import Any, Dict, List, Optional
 
+# --- Re-export all public symbols from a2a-sdk server subpackages ---
+# This ensures kiboup.a2a.server is never more limited than the SDK itself.
+from a2a.server.agent_execution import *  # noqa: F401, F403
+from a2a.server.apps import *  # noqa: F401, F403
+from a2a.server.request_handlers import *  # noqa: F401, F403
+from a2a.server.tasks import *  # noqa: F401, F403
+from a2a.server.events import *  # noqa: F401, F403
+from a2a.server.context import *  # noqa: F401, F403
+from a2a.types import *  # noqa: F401, F403
+
+# Explicit imports used internally by KiboAgentA2A
 from a2a.server.agent_execution import AgentExecutor
 from a2a.server.apps import A2AStarletteApplication
 from a2a.server.request_handlers import DefaultRequestHandler
@@ -45,14 +56,11 @@ from a2a.types import AgentCapabilities, AgentCard, AgentSkill, SecurityScheme
 from kiboup.shared.logger import create_logger
 from kiboup.shared.banner import print_banner, resolve_import_string
 
+# KiboAgentA2A is always exported; all SDK symbols come via wildcard above
 __all__ = [
     "KiboAgentA2A",
-    "AgentExecutor",
-    "AgentCapabilities",
-    "AgentCard",
-    "AgentSkill",
-    "TaskUpdater",
 ]
+
 
 
 class KiboAgentA2A:
